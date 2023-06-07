@@ -2,9 +2,9 @@ $(document).ready(function () {
     const elem = document.getElementById('dataExport');
     const select2SolarSystemsUrl = elem.getAttribute('data-select2SolarSystemsUrl');
     const select2StructureTypesUrl = elem.getAttribute('data-select2StructureTypesUrl');
-    const myTheme = "bootstrap"
+    const myTheme = "bootstrap";
     const isNightMode = JSON.parse(document.getElementById('night-mode-data').textContent);
-    const datetimepickerTheme = isNightMode ? 'dark' : 'default'
+    const datetimepickerTheme = isNightMode ? 'dark' : 'default';
     let languageCode = JSON.parse(document.getElementById('language-code-data').textContent);
 
     // mapping of language codes from Django to datetimepicker widget
@@ -43,11 +43,11 @@ $(document).ready(function () {
     $('#timer-date-field').datetimepicker({ format: 'Y-m-d H:i', theme: datetimepickerTheme });
 
     // Clear date field when time-remaining fields are used and vice versa
-    $('.timer-time-remaining-field').focus(function () {
-        $('#timer-date-field').val('')
+    $('.timer-time-remaining-field').change(function () {
+        $('#timer-date-field').val('');
     });
 
-    $('#timer-date-field').focus(function () {
-        $('.timer-time-remaining-field').val('')
+    $('#timer-date-field').change(function () {
+        $('.timer-time-remaining-field').val('');
     });
 });
