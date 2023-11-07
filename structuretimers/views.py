@@ -29,7 +29,6 @@ from app_utils.views import (
     bootstrap_label_html,
     fontawesome_link_button_html,
     link_html,
-    no_wrap_html,
     yesno_str,
 )
 
@@ -322,7 +321,7 @@ class TimerListDataView(
                 "success",
                 "Copy this timer",
             )
-        return no_wrap_html(actions)
+        return actions
 
 
 class TimerDetailDataView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
