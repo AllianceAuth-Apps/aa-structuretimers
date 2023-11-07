@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+## [1.5.2] - 2023-11-07
+
+### Fixed
+
+- Buttons show as HTML instead of widget
+
 ## [1.5.1] - 2023-04-18
 
 ### Fixed
