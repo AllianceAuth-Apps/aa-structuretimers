@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Tuple
 
 import dhooks_lite
 from multiselectfield import MultiSelectField
+from multiselectfield.utils import get_max_length
 from simple_mq import SimpleMQ
 
 from django.contrib.auth.models import User
@@ -744,6 +745,7 @@ class NotificationRule(models.Model):
     )
     require_timer_types = MultiSelectField(
         choices=Timer.Type.choices_for_notification_rules,
+        max_length=get_max_length(Timer.Type.choices_for_notification_rules, None),
         blank=True,
         help_text=(
             "Timer must have one of the given timer types "
@@ -752,11 +754,13 @@ class NotificationRule(models.Model):
     )
     exclude_timer_types = MultiSelectField(
         choices=Timer.Type.choices_for_notification_rules,
+        max_length=get_max_length(Timer.Type.choices_for_notification_rules, None),
         blank=True,
         help_text="Timer must NOT have one of the given timer types",
     )
     require_objectives = MultiSelectField(
         choices=Timer.Objective.choices,
+        max_length=get_max_length(Timer.Objective.choices, None),
         blank=True,
         help_text=(
             "Timer must have one of the given objectives "
@@ -765,6 +769,7 @@ class NotificationRule(models.Model):
     )
     exclude_objectives = MultiSelectField(
         choices=Timer.Objective.choices,
+        max_length=get_max_length(Timer.Objective.choices, None),
         blank=True,
         help_text="Timer must NOT have one of the given objectives",
     )
@@ -800,6 +805,7 @@ class NotificationRule(models.Model):
     )
     require_visibility = MultiSelectField(
         choices=Timer.Visibility.choices,
+        max_length=get_max_length(Timer.Visibility.choices, None),
         blank=True,
         help_text=(
             "Visibility must be one of the selected or leave blank to match any."
@@ -807,6 +813,7 @@ class NotificationRule(models.Model):
     )
     exclude_visibility = MultiSelectField(
         choices=Timer.Visibility.choices,
+        max_length=get_max_length(Timer.Visibility.choices, None),
         blank=True,
         help_text="Visibility must NOT be one of the selected",
     )
@@ -839,6 +846,7 @@ class NotificationRule(models.Model):
     )
     require_space_types = MultiSelectField(
         choices=Timer.SpaceType.choices,
+        max_length=get_max_length(Timer.SpaceType.choices, None),
         blank=True,
         help_text=(
             "Space type must be one of the selected or leave blank to match any."
@@ -846,6 +854,7 @@ class NotificationRule(models.Model):
     )
     exclude_space_types = MultiSelectField(
         choices=Timer.SpaceType.choices,
+        max_length=get_max_length(Timer.SpaceType.choices, None),
         blank=True,
         help_text="Space Type must NOT be one of the selected",
     )
