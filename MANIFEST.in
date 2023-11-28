@@ -1,5 +1,0 @@
-include LICENSE
-include README.md
-recursive-include structuretimers *.py
-recursive-include structuretimers/static *
-recursive-include structuretimers/templates *

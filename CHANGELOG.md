@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for Python 3.11
 - Support for AA 4
 
+### Changed
+
+- Switch to flit for build
+
 ## [1.5.2] - 2023-11-07
 
 ### Fixed
