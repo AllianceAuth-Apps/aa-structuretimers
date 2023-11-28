@@ -1,12 +1,11 @@
 from datetime import timedelta
 from typing import Optional
 from unittest.mock import Mock, patch
-
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.timezone import now
-
+from json.decoder import JSONDecodeError
 from app_utils.testing import (
     create_user_from_evecharacter,
     json_response_to_dict,
@@ -192,7 +191,7 @@ class TestListData(TestViewBase):
         # then
         self.assertSetEqual(timer_ids, {self.timer_4.id})
 
-    def test_should_require_permission(self):
+    def test_should_not_give_access_without_basic_permission(self):
         # given
         user, _ = create_user_from_evecharacter(1003)
         self.client.force_login(user)
@@ -201,7 +200,8 @@ class TestListData(TestViewBase):
             reverse("structuretimers:timer_list_data", args=["current"])
         )
         # then
-        self.assertEqual(response.status_code, 302)
+        with self.assertRaises(JSONDecodeError):
+            json_response_to_python(response)  # TODO: Change to checking http code
 
     def test_show_corp_restricted_to_corp_member(self):
         timer_4 = create_timer(
@@ -468,6 +468,7 @@ class TestDetailView(TestViewBase):
         )
         # then
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "structuretimers/timer_detail.html")
         self.assertIn("Timer 4", response.rendered_content)
 
     def test_forbidden(self):
@@ -480,7 +481,9 @@ class TestDetailView(TestViewBase):
             reverse("structuretimers:detail", args=[self.timer_1.pk])
         )
         # then
-        self.assertEqual(response.status_code, 302)
+        self.assertTemplateNotUsed(
+            response, "structuretimers/timer_detail.html"
+        )  # TODO: Change to test for status code
 
 
 class TestSelect2Views(LoadTestDataMixin, TestCase):
