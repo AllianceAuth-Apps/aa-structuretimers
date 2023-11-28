@@ -9,13 +9,12 @@ description = "An app for keeping track of Eve Online structure timers with Alli
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.8"
-authors = [
-    { name = "Erik Kalkoken", email = "kalkoken87@gmail.com" },
-]
+authors = [{ name = "Erik Kalkoken", email = "kalkoken87@gmail.com" }]
 classifiers = [
     "Environment :: Web Environment",
     "Framework :: Django",
     "Framework :: Django :: 4.0",
+    "Framework :: Django :: 4.2",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -23,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
 ]
@@ -46,9 +46,7 @@ Tracker = "https://gitlab.com/ErikKalkoken/aa-structuretimers/-/issues"
 path = "structuretimers/__init__.py"
 
 [tool.hatch.build]
-include = [
-    "/structuretimers",
-]
+include = ["/structuretimers"]
 
 [tool.isort]
 profile = "black"
@@ -60,7 +58,7 @@ sections = [
     "DJANGO",
     "ALLIANCEAUTH",
     "FIRSTPARTY",
-    "LOCALFOLDER"
+    "LOCALFOLDER",
 ]
 known_allianceauth = ["allianceauth", "app_utils"]
 known_django = ["django", "django_webtest", "esi", "eveuniverse"]
