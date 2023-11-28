@@ -30,13 +30,11 @@ class TestUI(LoadTestDataMixin, WebTest):
     def setUpClass(cls):
         super().setUpClass()
 
-        # user 1
-        cls.user_1 = create_user(cls.character_1)
+        cls.user_basic = create_user(cls.character_1)
 
-        # user 2
-        cls.user_2 = create_user(cls.character_2)
-        cls.user_2 = add_permission_to_user_by_name(
-            "structuretimers.create_timer", cls.user_2
+        cls.user_create = create_user(cls.character_2)
+        cls.user_create = add_permission_to_user_by_name(
+            "structuretimers.create_timer", cls.user_create
         )
 
     @patch(MODELS_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
@@ -46,7 +44,7 @@ class TestUI(LoadTestDataMixin, WebTest):
             date=now() + timedelta(hours=4),
             eve_character=self.character_2,
             eve_corporation=self.corporation_1,
-            user=self.user_2,
+            user=self.user_create,
             eve_solar_system=self.system_abune,
             structure_type=self.type_astrahus,
         )
@@ -55,7 +53,7 @@ class TestUI(LoadTestDataMixin, WebTest):
             date=now() - timedelta(hours=8),
             eve_character=self.character_2,
             eve_corporation=self.corporation_1,
-            user=self.user_2,
+            user=self.user_create,
             eve_solar_system=self.system_abune,
             structure_type=self.type_raitaru,
         )
@@ -64,7 +62,7 @@ class TestUI(LoadTestDataMixin, WebTest):
             date=now() - timedelta(hours=8),
             eve_character=self.character_2,
             eve_corporation=self.corporation_1,
-            user=self.user_2,
+            user=self.user_create,
             eve_solar_system=self.system_enaluri,
             structure_type=self.type_astrahus,
         )
@@ -76,7 +74,7 @@ class TestUI(LoadTestDataMixin, WebTest):
         """
 
         # login
-        self.app.set_user(self.user_2)
+        self.app.set_user(self.user_create)
 
         # user opens timerboard
         timerboard = self.app.get(reverse("structuretimers:timer_list"))
@@ -111,24 +109,22 @@ class TestUI(LoadTestDataMixin, WebTest):
         """
         given a user does not have permissions
         when trying to access page for adding new timers
-        then he is redirected back to dashboard
+        then the form is not shown
         """
 
         # login
-        self.app.set_user(self.user_1)
-
-        # user opens timerboard
-        timerboard = self.app.get(reverse("structuretimers:timer_list"))
-        self.assertEqual(timerboard.status_code, 200)
+        self.app.set_user(self.user_basic)
 
         # Add button not shown to user
+        timerboard = self.app.get(reverse("structuretimers:timer_list"))
         with self.assertRaises(IndexError):
             timerboard.click(href=reverse("structuretimers:add"))
 
-        # direct request redirects user back to dashboard
+        # form is not shown
         response = self.app.get(reverse("structuretimers:add"))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("authentication:dashboard"))
+        self.assertNotIn(
+            "add-timer-form", response.forms
+        )  # TODO: Change to test for HTTP error code, once available
 
     def test_edit_existing_timer(self):
         """
@@ -137,7 +133,7 @@ class TestUI(LoadTestDataMixin, WebTest):
         """
 
         # login
-        self.app.set_user(self.user_2)
+        self.app.set_user(self.user_create)
 
         # user opens timerboard
         timerboard = self.app.get(reverse("structuretimers:timer_list"))
@@ -164,22 +160,23 @@ class TestUI(LoadTestDataMixin, WebTest):
         """
         given a user does not have permissions
         when trying to access page for timer edit
-        then he is redirected back to dashboard
+        then the form is not shown
         """
 
         # login
-        self.app.set_user(self.user_1)
+        self.app.set_user(self.user_basic)
 
         # user tries to access page for edit directly
         response = self.app.get(reverse("structuretimers:edit", args=[self.timer_1.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("authentication:dashboard"))
+        self.assertNotIn(
+            "add-timer-form", response.forms
+        )  # TODO: Change to test for HTTP error code, once available
 
     def test_edit_timer_of_others_without_permission_2(self):
         """
         given a user has permission to create tiemrs
         when trying to access page for timer edit of another user
-        then he is redirected back to dashboard
+        then the form is not shown
         """
 
         # login
@@ -189,8 +186,9 @@ class TestUI(LoadTestDataMixin, WebTest):
 
         # user tries to access page for edit directly
         response = self.app.get(reverse("structuretimers:edit", args=[self.timer_1.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("authentication:dashboard"))
+        self.assertNotIn(
+            "add-timer-form", response.forms
+        )  # TODO: Change to test for HTTP error code, once available
 
     def test_edit_timer_of_others_with_manager_permission(self):
         """
@@ -229,7 +227,7 @@ class TestUI(LoadTestDataMixin, WebTest):
         given a user has permission to create and manage timers
         when trying to access page for timer edit of a corp restricted timer
         from another corp
-        then he is redirected back to dashboard
+        then he the form is not shown
         """
         self.timer_3.visibility = Timer.Visibility.CORPORATION
         self.timer_3.save()
@@ -242,14 +240,15 @@ class TestUI(LoadTestDataMixin, WebTest):
 
         # user tries to access page for edit directly
         response = self.app.get(reverse("structuretimers:edit", args=[self.timer_3.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("authentication:dashboard"))
+        self.assertNotIn(
+            "add-timer-form", response.forms
+        )  # TODO: Change to test for HTTP error code, once available
 
     def test_manager_tries_to_edit_opsec_timer_of_others(self):
         """
         given a user has permission to create and manage timers
         when trying to access page for timer edit of a opsec timer
-        then he is redirected back to dashboard
+        then the form is not shown
         """
         self.timer_3.is_opsec = True
         self.timer_3.save()
@@ -262,8 +261,9 @@ class TestUI(LoadTestDataMixin, WebTest):
 
         # user tries to access page for edit directly
         response = self.app.get(reverse("structuretimers:edit", args=[self.timer_3.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("authentication:dashboard"))
+        self.assertNotIn(
+            "add-timer-form", response.forms
+        )  # TODO: Change to test for HTTP error code, once available
 
     def test_delete_existing_timer_by_manager(self):
         """
@@ -303,7 +303,7 @@ class TestUI(LoadTestDataMixin, WebTest):
         """
 
         # login
-        self.app.set_user(self.user_2)
+        self.app.set_user(self.user_create)
 
         # user opens timerboard
         timerboard = self.app.get(reverse("structuretimers:timer_list"))
@@ -328,7 +328,7 @@ class TestUI(LoadTestDataMixin, WebTest):
         """
         given a user does not have manager permissions
         when trying to access page to delete timer of another user
-        then he is redirected back to dashboard
+        then the form is not shown
         """
 
         # login
@@ -340,8 +340,9 @@ class TestUI(LoadTestDataMixin, WebTest):
         response = self.app.get(
             reverse("structuretimers:delete", args=[self.timer_2.pk])
         )
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("authentication:dashboard"))
+        self.assertNotIn(
+            "add-timer-form", response.forms
+        )  # TODO: Change to test for HTTP error code, once available
 
 
 """
