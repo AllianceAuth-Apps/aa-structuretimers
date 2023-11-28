@@ -1,11 +1,13 @@
 from datetime import timedelta
+from json.decoder import JSONDecodeError
 from typing import Optional
 from unittest.mock import Mock, patch
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.timezone import now
-from json.decoder import JSONDecodeError
+
 from app_utils.testing import (
     create_user_from_evecharacter,
     json_response_to_dict,
