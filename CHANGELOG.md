@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+## [1.7.0] - 2024-06-20
+
+### Added
+
+- Pirate FOBs can now be selected for timers. We recommend re-loading the eve universe data to make sure the new pirate FOBs can be seen by the app. The command is: `python manage.py structuretimers_load_eve`. (#34)
+
 ## [1.6.0] - 2023-11-28
 
 ### Added
