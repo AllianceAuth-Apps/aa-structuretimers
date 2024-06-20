@@ -5,7 +5,7 @@ from eveuniverse.models import EveSolarSystem
 
 from app_utils.django import app_labels
 
-from ...models import Timer
+from structuretimers.models import Timer
 
 
 def get_input(text):

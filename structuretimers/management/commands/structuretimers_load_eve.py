@@ -4,8 +4,8 @@ from django.core.management.base import BaseCommand
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 
-from ... import __title__
-from ...constants import EveCategoryId, EveGroupId, EveTypeId
+from structuretimers import __title__
+from structuretimers.constants import EveCategoryId, EveGroupId, EveTypeId
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
