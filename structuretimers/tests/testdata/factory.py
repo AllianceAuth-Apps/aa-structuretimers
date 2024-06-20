@@ -10,7 +10,7 @@ from allianceauth.eveonline.models import EveCharacter
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.helpers import random_string
 
-from ...models import (
+from structuretimers.models import (
     DiscordWebhook,
     DistancesFromStaging,
     NotificationRule,
