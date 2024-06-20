@@ -1,6 +1,7 @@
 from datetime import timedelta
 from json.decoder import JSONDecodeError
 from typing import Optional
+from unittest import skipIf
 from unittest.mock import Mock, patch
 
 from django.contrib.auth.models import User
@@ -18,7 +19,7 @@ from structuretimers.models import Timer
 
 from .testdata.factory import create_staging_system, create_timer, create_user
 from .testdata.fixtures import LoadTestDataMixin
-from .utils import add_permission_to_user_by_name
+from .utils import _is_aa4, add_permission_to_user_by_name
 
 MODELS_PATH = "structuretimers.models"
 
@@ -193,6 +194,7 @@ class TestListData(TestViewBase):
         # then
         self.assertSetEqual(timer_ids, {self.timer_4.id})
 
+    @skipIf(_is_aa4, "test is not compatible with AA4")
     def test_should_not_give_access_without_basic_permission(self):
         # given
         user, _ = create_user_from_evecharacter(1003)
@@ -473,6 +475,7 @@ class TestDetailView(TestViewBase):
         self.assertTemplateUsed(response, "structuretimers/timer_detail.html")
         self.assertIn("Timer 4", response.rendered_content)
 
+    @skipIf(_is_aa4, "test is not compatible with AA4")
     def test_forbidden(self):
         # given
         self.client.force_login(self.user_1)
