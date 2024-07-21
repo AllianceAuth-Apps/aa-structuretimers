@@ -5,7 +5,7 @@ stages:
 
 pre-commit:
   stage: checks
-  image: python:3.10-bullseye
+  image: python:3.10-bookworm
   variables:
     PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
   cache:
