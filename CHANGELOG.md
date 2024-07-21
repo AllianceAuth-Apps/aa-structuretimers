@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Skyhooks can now be selected for timers. We recommend re-loading the eve universe data to make sure Skyhooks are in your local database. The command is: `python manage.py structuretimers_load_eve`.
 
+### Fixed
+
+- Time Entered Into the Date auto clears upon time remaining (#31) - Thanks to @ppfeufer for the fix!
+
 ## [1.7.0] - 2024-06-20
 
 ### Added
