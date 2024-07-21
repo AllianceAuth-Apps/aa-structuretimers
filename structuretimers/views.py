@@ -471,7 +471,12 @@ class Select2StructureTypesView(JSONResponseMixin, ListView):
             )
             | qs.filter(eve_group_id__in=[EveGroupId.PIRATE_FORWARD_OPERATING_BASE])
             | qs.filter(
-                id__in=[EveTypeId.CUSTOMS_OFFICE, EveTypeId.IHUB, EveTypeId.TCU]
+                id__in=[
+                    EveTypeId.CUSTOMS_OFFICE,
+                    EveTypeId.SKYHOOK,
+                    EveTypeId.IHUB,
+                    EveTypeId.TCU,
+                ]
             )
         )
         return qs.distinct().filter(name__icontains=term)
