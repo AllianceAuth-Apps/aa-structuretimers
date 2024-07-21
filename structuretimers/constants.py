@@ -15,4 +15,5 @@ class EveGroupId(IntEnum):
 class EveTypeId(IntEnum):
     CUSTOMS_OFFICE = 2233
     IHUB = 32458
+    SKYHOOK = 81080
     TCU = 32226
