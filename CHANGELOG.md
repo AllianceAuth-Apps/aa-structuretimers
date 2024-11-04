@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+## [1.9.0] - 2024-11-04
+
+### Added
+
+- Added new timer type "Theft" for Skyhooks (#27)
+
 ## [1.8.0] - 2024-07-21
 
 ### Added

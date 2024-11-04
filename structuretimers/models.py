@@ -301,6 +301,7 @@ class Timer(models.Model):
         ANCHORING = "AN", _("Anchoring")
         UNANCHORING = "UA", _("Unanchoring")
         MOONMINING = "MM", _("Moon Mining")
+        THEFT = "TF", _("Theft")
         PRELIMINARY = "PL", _("Preliminary")  # special timer with no date
 
         @classproperty
@@ -584,6 +585,7 @@ class Timer(models.Model):
             self.Type.ANCHORING: "warning",
             self.Type.UNANCHORING: "warning",
             self.Type.MOONMINING: "success",
+            self.Type.THEFT: "warning",
         }
         if self.timer_type in label_types_map:
             label_type = label_types_map[self.timer_type]

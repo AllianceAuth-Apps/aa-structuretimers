@@ -145,7 +145,9 @@ class TimerForm(forms.ModelForm):
                     id=cleaned_data["eve_solar_system_2"]
                 )
             except EveSolarSystem.DoesNotExist:
-                pass
+                raise ValidationError(
+                    {"eve_solar_system_2": _("Invalid solar system.")}
+                )
             else:
                 self.fields["eve_solar_system_2"].widget.choices = [
                     (str(solar_system.id), solar_system.name)
@@ -157,7 +159,9 @@ class TimerForm(forms.ModelForm):
                     id=cleaned_data["structure_type_2"]
                 )
             except EveType.DoesNotExist:
-                pass
+                raise ValidationError(
+                    {"structure_type_2": _("Invalid structure type.")}
+                )
             else:
                 self.fields["structure_type_2"].widget.choices = [
                     (str(structure_type.id), structure_type.name)
@@ -172,6 +176,13 @@ class TimerForm(forms.ModelForm):
                                 "Moon mining timers are valid for refineries only."
                             )
                         }
+                    )
+                if (
+                    cleaned_data.get("timer_type") == Timer.Type.THEFT
+                    and structure_type.eve_group_id != EveGroupId.SKYHOOK
+                ):
+                    raise ValidationError(
+                        {"timer_type": _("Theft timers are valid for skyhook only.")}
                     )
 
         if cleaned_data.get("details_image_url"):

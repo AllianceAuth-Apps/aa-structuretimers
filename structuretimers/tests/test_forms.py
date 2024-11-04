@@ -5,6 +5,7 @@ from requests.exceptions import HTTPError
 
 from app_utils.testing import NoSocketsTestCase
 
+from structuretimers.constants import EveTypeId
 from structuretimers.forms import TimerForm
 from structuretimers.models import Timer
 
@@ -30,7 +31,7 @@ def bytes_from_file(filename, chunksize=8192):
 def create_form_data(**kwargs):
     form_data = {
         "eve_solar_system_2": 30004984,
-        "structure_type_2": 35832,
+        "structure_type_2": EveTypeId.ASTRAHUS,
         "timer_type": Timer.Type.NONE,
         "objective": Timer.Objective.UNDEFINED,
         "visibility": Timer.Visibility.UNRESTRICTED,
@@ -241,6 +242,26 @@ class TestTimerFormIsValid(LoadTestDataMixin, NoSocketsTestCase):
         form = TimerForm(data=form_data)
         # when / then
         self.assertFalse(form.is_valid())
+
+    def test_should_allow_theft_timer_for_skyhook_only(self):
+        cases = [
+            (EveTypeId.ORBITAL_SKYHOOK, True),
+            (EveTypeId.ASTRAHUS, False),
+            (EveTypeId.CUSTOMS_OFFICE, False),
+            (EveTypeId.IHUB, False),
+            (EveTypeId.TCU, False),
+        ]
+        for tc in cases:
+            with self.subTest(structure_type_id=tc[0]):
+                form_data = create_form_data(
+                    days_left=0,
+                    hours_left=3,
+                    minutes_left=30,
+                    timer_type=Timer.Type.THEFT,
+                    structure_type_2=tc[0],
+                )
+                form = TimerForm(data=form_data)
+                self.assertIs(form.is_valid(), tc[1])
 
 
 @patch(MODELS_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())

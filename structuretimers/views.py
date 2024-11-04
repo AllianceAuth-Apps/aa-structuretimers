@@ -473,7 +473,7 @@ class Select2StructureTypesView(JSONResponseMixin, ListView):
             | qs.filter(
                 id__in=[
                     EveTypeId.CUSTOMS_OFFICE,
-                    EveTypeId.SKYHOOK,
+                    EveTypeId.ORBITAL_SKYHOOK,
                     EveTypeId.IHUB,
                     EveTypeId.TCU,
                 ]
