@@ -1,3 +1,7 @@
+"""Admin module."""
+
+# pylint: disable=missing-class-docstring, missing-function-docstring
+
 from typing import Any, Dict, Optional
 
 from django import forms
@@ -216,7 +220,7 @@ class NotificationRuleAdmin(admin.ModelAdmin):
         return obj.get_scheduled_time_display()
 
     def _timer_clauses(self, obj) -> str:
-        clauses = list()
+        clauses = []
         for field, func, choices in [
             ("require_timer_types", self._add_to_clauses_1, Timer.Type.choices),
             ("exclude_timer_types", self._add_to_clauses_1, Timer.Type.choices),

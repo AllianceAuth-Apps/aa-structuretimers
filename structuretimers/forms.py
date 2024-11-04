@@ -1,3 +1,5 @@
+"""Forms."""
+
 import datetime as dt
 import imghdr
 
@@ -25,6 +27,8 @@ DATETIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
 class TimerForm(forms.ModelForm):
+    """Form for timers."""
+
     ASTERISK_HTML = '<i class="fas fa-asterisk"></i>'
     TIME_REMAINING_WIDGET_ATTRS = {
         "class": "timer-time-remaining-field",
@@ -144,46 +148,45 @@ class TimerForm(forms.ModelForm):
                 solar_system = EveSolarSystem.objects.get(
                     id=cleaned_data["eve_solar_system_2"]
                 )
-            except EveSolarSystem.DoesNotExist:
+            except EveSolarSystem.DoesNotExist as ex:
                 raise ValidationError(
                     {"eve_solar_system_2": _("Invalid solar system.")}
-                )
-            else:
-                self.fields["eve_solar_system_2"].widget.choices = [
-                    (str(solar_system.id), solar_system.name)
-                ]
+                ) from ex
+            self.fields["eve_solar_system_2"].widget.choices = [
+                (str(solar_system.id), solar_system.name)
+            ]
 
         if cleaned_data.get("structure_type_2"):
             try:
                 structure_type = EveType.objects.get(
                     id=cleaned_data["structure_type_2"]
                 )
-            except EveType.DoesNotExist:
+            except EveType.DoesNotExist as ex:
                 raise ValidationError(
                     {"structure_type_2": _("Invalid structure type.")}
+                ) from ex
+
+            self.fields["structure_type_2"].widget.choices = [
+                (str(structure_type.id), structure_type.name)
+            ]
+            if (
+                cleaned_data.get("timer_type") == Timer.Type.MOONMINING
+                and structure_type.eve_group_id != EveGroupId.REFINERY
+            ):
+                raise ValidationError(
+                    {
+                        "timer_type": _(
+                            "Moon mining timers are valid for refineries only."
+                        )
+                    }
                 )
-            else:
-                self.fields["structure_type_2"].widget.choices = [
-                    (str(structure_type.id), structure_type.name)
-                ]
-                if (
-                    cleaned_data.get("timer_type") == Timer.Type.MOONMINING
-                    and structure_type.eve_group_id != EveGroupId.REFINERY
-                ):
-                    raise ValidationError(
-                        {
-                            "timer_type": _(
-                                "Moon mining timers are valid for refineries only."
-                            )
-                        }
-                    )
-                if (
-                    cleaned_data.get("timer_type") == Timer.Type.THEFT
-                    and structure_type.eve_group_id != EveGroupId.SKYHOOK
-                ):
-                    raise ValidationError(
-                        {"timer_type": _("Theft timers are valid for skyhook only.")}
-                    )
+            if (
+                cleaned_data.get("timer_type") == Timer.Type.THEFT
+                and structure_type.eve_group_id != EveGroupId.SKYHOOK
+            ):
+                raise ValidationError(
+                    {"timer_type": _("Theft timers are valid for skyhook only.")}
+                )
 
         if cleaned_data.get("details_image_url"):
             details_image_url = cleaned_data["details_image_url"]
@@ -205,24 +208,24 @@ class TimerForm(forms.ModelForm):
                     },
                     code="details_url_failed_to_load",
                 ) from ex
-            else:
-                image_type = imghdr.what(None, h=r.content)
-                if image_type not in {"gif", "jpeg", "png"}:
-                    logger.warning(
-                        f"{image_type} is not a valid image type "
-                        "for URL: {details_image_url}"
-                    )
-                    raise forms.ValidationError(
-                        {
-                            "details_image_url": _(
-                                _(
-                                    "URL does not point to a valid image file. "
-                                    "Valid types are: gif, jpeg, png"
-                                )
+            image_type = imghdr.what(None, h=r.content)
+            if image_type not in {"gif", "jpeg", "png"}:
+                logger.warning(
+                    f"{image_type} is not a valid image type "
+                    "for URL: {details_image_url}"
+                )
+                raise forms.ValidationError(
+                    {
+                        "details_image_url": _(
+                            _(
+                                "URL does not point to a valid image file. "
+                                "Valid types are: gif, jpeg, png"
                             )
-                        },
-                        code="details_url_unsupported_type",
-                    )
+                        )
+                    },
+                    code="details_url_unsupported_type",
+                )
+
         days_left = cleaned_data.get("days_left")
         hours_left = cleaned_data.get("hours_left")
         minutes_left = cleaned_data.get("minutes_left")

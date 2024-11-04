@@ -1,3 +1,5 @@
+"""Settings."""
+
 from app_utils.app_settings import clean_setting
 
 STRUCTURETIMERS_MAX_AGE_FOR_NOTIFICATIONS = clean_setting(

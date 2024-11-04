@@ -725,7 +725,7 @@ class TestDiscordWebhookSendMessageToWebhook(NoSocketsTestCase):
         return True
         """
         mock_execute.return_value = dhooks_lite.WebhookResponse(
-            headers=dict(), status_code=200
+            headers={}, status_code=200
         )
         message = {
             "content": "my_content",
@@ -761,7 +761,7 @@ class TestDiscordWebhookSendMessageToWebhook(NoSocketsTestCase):
         then log warning and return False
         """
         mock_execute.return_value = dhooks_lite.WebhookResponse(
-            headers=dict(), status_code=440
+            headers={}, status_code=440
         )
         message = {
             "content": "my_content",

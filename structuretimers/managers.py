@@ -1,3 +1,7 @@
+"""Managers."""
+
+# pylint: disable=missing-class-docstring
+
 from datetime import timedelta
 
 from django.contrib.auth.models import User
@@ -12,7 +16,7 @@ class NotificationRuleQuerySet(models.QuerySet):
         """Return new queryset based on current queryset,
         which only contains notification rules that conforms with the given timer.
         """
-        matching_rule_pks = list()
+        matching_rule_pks = []
         for notification_rule in self:
             if notification_rule.is_matching_timer(timer):
                 matching_rule_pks.append(notification_rule.pk)
@@ -31,6 +35,7 @@ NotificationRuleManager = NotificationRuleManagerBase.from_queryset(
 
 class TimerQuerySet(models.QuerySet):
     def select_related_for_matching(self) -> models.QuerySet:
+        """Apply select related for matching."""
         return self.select_related(
             "eve_solar_system",
             "eve_solar_system__eve_constellation__eve_region",
@@ -84,9 +89,9 @@ class TimerQuerySet(models.QuerySet):
         """Filter timers for tabs."""
         if tab_name == "current":
             return self.filter(date__gte=now() - timedelta(hours=max_hours_passed))
-        elif tab_name == "preliminary":
+        if tab_name == "preliminary":
             return self.filter(timer_type=self.model.Type.PRELIMINARY)
-        elif tab_name == "past":
+        if tab_name == "past":
             return self.filter(date__lt=now())
         raise ValueError(f"Invalid tab name: {tab_name}")
 
