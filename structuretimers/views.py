@@ -1,3 +1,7 @@
+"""Views."""
+
+# pylint: disable=too-many-ancestors
+
 import math
 from copy import deepcopy
 
@@ -47,6 +51,8 @@ MAX_HOURS_PASSED = 2
 
 
 class TimerListView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    """View for showing a list of timer."""
+
     template_name = "structuretimers/timer_list.html"
     permission_required = "structuretimers.basic_access"
 
@@ -113,133 +119,14 @@ class TimerListDataView(
         return timers_qs
 
     def get_data(self, context):
-        staging_system_pk = self.request.GET.get("staging")
-        if staging_system_pk:
-            distances_map = {
-                obj.timer_id: obj
-                for obj in DistancesFromStaging.objects.filter(
-                    staging_system__pk=staging_system_pk
-                ).all()
-            }
-        else:
-            distances_map = dict()
-        data = list()
+        data = []
         for timer in self.object_list:
-            # location
-            location = link_html(
-                dotlan.solar_system_url(timer.eve_solar_system.name),
-                timer.eve_solar_system.name,
-            )
-            if timer.location_details:
-                location += format_html("<br><em>{}</em>", timer.location_details)
-
-            location += format_html(
-                "<br>{}", timer.eve_solar_system.eve_constellation.eve_region.name
-            )
-            # distance
-            try:
-                distances = distances_map[timer.id]
-            except KeyError:
-                distance_text = "?"
-                distances = None
-            else:
-                light_years_text = (
-                    f"{math.ceil(distances.light_years * 10) / 10} ly"
-                    if distances.light_years is not None
-                    else "N/A"
-                )
-                jumps_text = (
-                    f"{distances.jumps} jumps" if distances.jumps is not None else "N/A"
-                )
-                distance_text = format_html("{}<br>{}", light_years_text, jumps_text)
-
-            # structure & timer type & fitting image
-            timer_type = bootstrap_label_html(
-                timer.get_timer_type_display(), timer.label_type_for_timer_type()
-            )
-            if timer.structure_type:
-                structure_type_icon_url = timer.structure_type.icon_url(size=64)
-                structure_type_name = timer.structure_type.name
-            else:
-                structure_type_icon_url = ""
-                structure_type_name = "(unknown)"
-
-            structure = format_html(
-                '<div class="flex-container">'
-                '  <div style="padding-top: 4px;"><img src="{}" width="40"></div>'
-                '  <div style="text-align: left;">'
-                "    {}&nbsp;<br>"
-                "    {}"
-                "  </div>"
-                "</div>",
-                structure_type_icon_url,
-                mark_safe(bootstrap_label_html(structure_type_name, "info")),
-                timer_type,
-            )
-
-            # objective & tags
-            tags = list()
-            is_restricted = False
-            if timer.is_opsec:
-                tags.append(bootstrap_label_html("OPSEC", "danger"))
-                is_restricted = True
-
-            if timer.visibility != Timer.Visibility.UNRESTRICTED:
-                tags.append(
-                    bootstrap_label_html(timer.get_visibility_display(), "info")
-                )
-                is_restricted = True
-
-            if timer.is_important:
-                tags.append(bootstrap_label_html("Important", "warning"))
-
-            objective = format_html(
-                "{}<br>{}",
-                mark_safe(
-                    bootstrap_label_html(
-                        timer.get_objective_display(), timer.label_type_for_objective()
-                    )
-                ),
-                mark_safe(" ".join(tags)),
-            )
-
-            # name & owner
-            if timer.owner_name:
-                owner_name = timer.owner_name
-                owner = owner_name
-            else:
-                owner = "-"
-                owner_name = ""
-
-            structure_name = timer.structure_name if timer.structure_name else "-"
-            name = format_html("{}<br>{}", structure_name, owner)
-
-            if timer.eve_corporation:
-                corporation_name = timer.eve_corporation.corporation_name
-            else:
-                corporation_name = "-"
-
-            # creator
-            # if timer.eve_character:
-            #     creator = format_html(
-            #         "{}<br>{}",
-            #         link_html(
-            #             evewho.character_url(timer.eve_character.character_id),
-            #             timer.eve_character.character_name,
-            #         ),
-            #         corporation_name,
-            #     )
-            # elif corporation_name:
-            #     creator = corporation_name
-            # else:
-            #     creator = "-"
-
-            # visibility
-            visibility = ""
-            if timer.visibility == Timer.Visibility.ALLIANCE and timer.eve_alliance:
-                visibility = timer.eve_alliance.alliance_name
-            elif timer.visibility == Timer.Visibility.CORPORATION:
-                visibility = corporation_name
+            location = self._calc_location_for_timer(timer)
+            distances, distance_text = self._calc_distance_for_timer(timer)
+            structure = self._calc_structure_for_timer(timer)
+            is_restricted, objective = self._calc_objective(timer)
+            owner_name, name = self._calc_owner_name(timer)
+            visibility = self._calc_visibility(timer)
             distances_light_years = distances.light_years if distances else None
             data.append(
                 {
@@ -275,6 +162,125 @@ class TimerListDataView(
             )
 
         return data
+
+    def _calc_visibility(self, timer):
+        if timer.eve_corporation:
+            corporation_name = timer.eve_corporation.corporation_name
+        else:
+            corporation_name = "-"
+
+        visibility = ""
+        if timer.visibility == Timer.Visibility.ALLIANCE and timer.eve_alliance:
+            visibility = timer.eve_alliance.alliance_name
+        elif timer.visibility == Timer.Visibility.CORPORATION:
+            visibility = corporation_name
+        return visibility
+
+    def _calc_owner_name(self, timer):
+        if timer.owner_name:
+            owner_name = timer.owner_name
+            owner = owner_name
+        else:
+            owner = "-"
+            owner_name = ""
+
+        structure_name = timer.structure_name if timer.structure_name else "-"
+        name = format_html("{}<br>{}", structure_name, owner)
+        return owner_name, name
+
+    def _calc_objective(self, timer):
+        tags = []
+        is_restricted = False
+        if timer.is_opsec:
+            tags.append(bootstrap_label_html("OPSEC", "danger"))
+            is_restricted = True
+
+        if timer.visibility != Timer.Visibility.UNRESTRICTED:
+            tags.append(bootstrap_label_html(timer.get_visibility_display(), "info"))
+            is_restricted = True
+
+        if timer.is_important:
+            tags.append(bootstrap_label_html("Important", "warning"))
+
+        objective = format_html(
+            "{}<br>{}",
+            mark_safe(
+                bootstrap_label_html(
+                    timer.get_objective_display(), timer.label_type_for_objective()
+                )
+            ),
+            mark_safe(" ".join(tags)),
+        )
+
+        return is_restricted, objective
+
+    def _calc_structure_for_timer(self, timer):
+        timer_type = bootstrap_label_html(
+            timer.get_timer_type_display(), timer.label_type_for_timer_type()
+        )
+        if timer.structure_type:
+            structure_type_icon_url = timer.structure_type.icon_url(size=64)
+            structure_type_name = timer.structure_type.name
+        else:
+            structure_type_icon_url = ""
+            structure_type_name = "(unknown)"
+
+        structure = format_html(
+            '<div class="flex-container">'
+            '  <div style="padding-top: 4px;"><img src="{}" width="40"></div>'
+            '  <div style="text-align: left;">'
+            "    {}&nbsp;<br>"
+            "    {}"
+            "  </div>"
+            "</div>",
+            structure_type_icon_url,
+            mark_safe(bootstrap_label_html(structure_type_name, "info")),
+            timer_type,
+        )
+
+        return structure
+
+    @staticmethod
+    def _calc_location_for_timer(timer: Timer):
+        location = link_html(
+            dotlan.solar_system_url(timer.eve_solar_system.name),
+            timer.eve_solar_system.name,
+        )
+        if timer.location_details:
+            location += format_html("<br><em>{}</em>", timer.location_details)
+
+        location += format_html(
+            "<br>{}", timer.eve_solar_system.eve_constellation.eve_region.name
+        )
+        return location
+
+    def _calc_distance_for_timer(self, timer: Timer):
+        staging_system_pk = self.request.GET.get("staging")
+        if staging_system_pk:
+            distances_map = {
+                obj.timer_id: obj
+                for obj in DistancesFromStaging.objects.filter(
+                    staging_system__pk=staging_system_pk
+                ).all()
+            }
+        else:
+            distances_map = {}
+        try:
+            distances = distances_map[timer.id]
+        except KeyError:
+            distance_text = "?"
+            distances = None
+        else:
+            light_years_text = (
+                f"{math.ceil(distances.light_years * 10) / 10} ly"
+                if distances.light_years is not None
+                else "N/A"
+            )
+            jumps_text = (
+                f"{distances.jumps} jumps" if distances.jumps is not None else "N/A"
+            )
+            distance_text = format_html("{}<br>{}", light_years_text, jumps_text)
+        return distances, distance_text
 
     def _get_data_actions(self, timer):
         actions = ""
@@ -325,6 +331,8 @@ class TimerListDataView(
 
 
 class TimerDetailDataView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    """View for showing details of a timer."""
+
     permission_required = "structuretimers.basic_access"
     model = Timer
 
@@ -336,6 +344,8 @@ class TimerDetailDataView(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
 
 
 class TimerManagementView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """View for editing a timer."""
+
     model = Timer
     form_class = TimerForm
     title = _("Edit Structure Timer")
@@ -473,7 +483,7 @@ class Select2StructureTypesView(JSONResponseMixin, ListView):
             | qs.filter(
                 id__in=[
                     EveTypeId.CUSTOMS_OFFICE,
-                    EveTypeId.SKYHOOK,
+                    EveTypeId.ORBITAL_SKYHOOK,
                     EveTypeId.IHUB,
                     EveTypeId.TCU,
                 ]

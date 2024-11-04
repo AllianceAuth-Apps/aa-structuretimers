@@ -1,3 +1,5 @@
+"""Models."""
+
 import json
 from time import sleep
 from typing import Any, List, Optional, Tuple
@@ -143,7 +145,7 @@ class DiscordWebhook(models.Model):
         else:
             embeds_list = None
 
-        message = dict()
+        message = {}
         if content:
             message["content"] = content
         if embeds_list:
@@ -200,8 +202,7 @@ class DiscordWebhook(models.Model):
             y = self._main_queue.dequeue()
             if y is None:
                 break
-            else:
-                counter += 1
+            counter += 1
 
         return counter
 
@@ -231,13 +232,13 @@ class DiscordWebhook(models.Model):
         logger.debug("content: %s", response.content)
         if response.status_ok:
             return True
-        else:
-            logger.warning(
-                "Failed to send message to Discord. HTTP status code: %d, response: %s",
-                response.status_code,
-                response.content,
-            )
-            return False
+
+        logger.warning(
+            "Failed to send message to Discord. HTTP status code: %d, response: %s",
+            response.status_code,
+            response.content,
+        )
+        return False
 
     @classmethod
     def create_discord_link(cls, name: str, url: str) -> str:
@@ -261,8 +262,7 @@ class DiscordWebhook(models.Model):
                 exc_info=True,
             )
             return str(ex), False
-        else:
-            return "(no info)", success
+        return "(no info)", success
 
     @staticmethod
     def default_username() -> str:
@@ -294,6 +294,8 @@ class Timer(models.Model):
     VISIBILITY_CORPORATION = "CO"
 
     class Type(models.TextChoices):
+        """A time type."""
+
         NONE = "NO", _("Unspecified")
         ARMOR = "AR", _("Armor")
         HULL = "HL", _("Hull")
@@ -301,6 +303,7 @@ class Timer(models.Model):
         ANCHORING = "AN", _("Anchoring")
         UNANCHORING = "UA", _("Unanchoring")
         MOONMINING = "MM", _("Moon Mining")
+        THEFT = "TF", _("Theft")
         PRELIMINARY = "PL", _("Preliminary")  # special timer with no date
 
         @classproperty
@@ -309,17 +312,23 @@ class Timer(models.Model):
             return [choice for choice in cls.choices if choice[0] != cls.PRELIMINARY]
 
     class Objective(models.TextChoices):
+        """A timer objective."""
+
         UNDEFINED = "UN", _("undefined")
         HOSTILE = "HO", _("hostile")
         FRIENDLY = "FR", _("friendly")
         NEUTRAL = "NE", _("neutral")
 
     class Visibility(models.TextChoices):
+        """A timer visibility."""
+
         UNRESTRICTED = "UN", _("unrestricted")
         ALLIANCE = "AL", _("Alliance only")
         CORPORATION = "CO", _("Corporation only")
 
     class SpaceType(models.TextChoices):
+        """A timer space type."""
+
         UNDEFINED = "UN", _("undefined")
         HIGH_SEC = "HS", _("highsec")
         LOW_SEC = "LS", _("lowsec")
@@ -461,11 +470,10 @@ class Timer(models.Model):
     objects = TimerManager()
 
     def __str__(self):
-        return "{} timer for {}{}".format(
-            self.get_timer_type_display(),
-            self.structure_display_name,
-            f" @ {self.date.strftime(DATETIME_FORMAT)}" if self.date else "",
-        )
+        timer_type = self.get_timer_type_display()
+        structure_name = self.structure_display_name
+        date = f" @ {self.date.strftime(DATETIME_FORMAT)}" if self.date else ""
+        return f"{timer_type} timer for {structure_name}{date}"
 
     def get_absolute_url(self) -> str:
         url = reverse("structuretimers:timer_list")
@@ -518,16 +526,17 @@ class Timer(models.Model):
             )
 
     @property
-    def structure_display_name(self):
-        return "{}{} in {}{}".format(
-            self.structure_type.name,
-            f' "{self.structure_name}"' if self.structure_name else "",
-            self.eve_solar_system.name if self.eve_solar_system else "",
-            f" near {self.location_details}" if self.location_details else "",
-        )
+    def structure_display_name(self) -> str:
+        """Return structure name for display."""
+        type_name = self.structure_type.name
+        structure_name = f' "{self.structure_name}"' if self.structure_name else ""
+        solar_system = self.eve_solar_system.name if self.eve_solar_system else ""
+        location = f" near {self.location_details}" if self.location_details else ""
+        return f"{type_name}{structure_name} in {solar_system}{location}"
 
     @property
     def space_type(self) -> "SpaceType":
+        """Return space type of a timer."""
         return self.SpaceType.from_eve_solar_system(self.eve_solar_system)
 
     def user_can_edit(self, user: User) -> bool:
@@ -535,44 +544,6 @@ class Timer(models.Model):
         return user.has_perm("structuretimers.manage_timer") or (
             self.user == user and user.has_perm("structuretimers.create_timer")
         )
-
-    """
-    def user_can_view(self, user: user) -> bool:
-        # Checks if the given user can see this timer. Returns True or False
-        if not user.has_perm("structuretimers.basic_access"):
-            return False
-
-        if self.is_opsec and not user.has_perm("structuretimers.opsec_access"):
-            return False
-
-        if (
-            self.visibility == self.Visibility.CORPORATION
-            and self.eve_corporation
-            and (
-                not user.profile.main_character
-                or (
-                    user.profile.main_character.corporation_id
-                    != self.eve_corporation.corporation_id
-                )
-            )
-        ):
-            return False
-
-        if (
-            self.visibility == self.Visibility.ALLIANCE
-            and self.eve_alliance
-            and (
-                not user.profile.main_character
-                or (
-                    user.profile.main_character.alliance_id
-                    != self.eve_alliance.alliance_id
-                )
-            )
-        ):
-            return False
-
-        return True
-    """
 
     def label_type_for_timer_type(self) -> str:
         """returns the Boostrap label type for a timer_type"""
@@ -584,6 +555,7 @@ class Timer(models.Model):
             self.Type.ANCHORING: "warning",
             self.Type.UNANCHORING: "warning",
             self.Type.MOONMINING: "success",
+            self.Type.THEFT: "warning",
         }
         if self.timer_type in label_types_map:
             label_type = label_types_map[self.timer_type]
@@ -666,8 +638,11 @@ class Timer(models.Model):
 
 
 class NotificationRule(models.Model):
-    # Trigger choices
+    """A notification rule."""
+
     class Trigger(models.TextChoices):
+        """A trigger choice."""
+
         NEW_TIMER_CREATED = "TC", _("New timer created")
         SCHEDULED_TIME_REACHED = "TR", _("Scheduled time reached")
 
@@ -695,6 +670,8 @@ class NotificationRule(models.Model):
     )
 
     class PingType(models.TextChoices):
+        """Ping type for a notification rule."""
+
         NONE = "PN", "(no ping)"
         HERE = "PH", "@here"
         EVERYONE = "PE", "@everyone"
@@ -708,6 +685,8 @@ class NotificationRule(models.Model):
                 return ""
 
     class Clause(models.TextChoices):
+        """A clause in a notification rule."""
+
         ANY = "AN", "any"
         REQUIRED = "RQ", "required"
         EXCLUDED = "EX", "excluded"
@@ -896,6 +875,7 @@ class NotificationRule(models.Model):
         """returns True if notification rule is matching the given timer, else False"""
         if timer.date is None:
             return False
+
         is_matching = True
         if is_matching and self.is_important == self.Clause.REQUIRED:
             is_matching = timer.is_important
@@ -1033,6 +1013,8 @@ class StagingSystem(models.Model):
 
 
 class DistancesFromStaging(models.Model):
+    """A distance from a staging system."""
+
     timer = models.ForeignKey(Timer, on_delete=models.CASCADE, related_name="distances")
     staging_system = models.ForeignKey(
         StagingSystem, on_delete=models.CASCADE, related_name="distances"

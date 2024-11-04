@@ -26,7 +26,7 @@ class Command(BaseCommand):
             "--type_id",
             str(EveTypeId.CUSTOMS_OFFICE.value),
             "--type_id",
-            str(EveTypeId.SKYHOOK.value),
+            str(EveTypeId.ORBITAL_SKYHOOK.value),
             "--type_id",
             str(EveTypeId.TCU.value),
             "--type_id",

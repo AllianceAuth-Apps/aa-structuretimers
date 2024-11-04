@@ -1,3 +1,7 @@
+"""Global constants."""
+
+# pylint: disable=missing-class-docstring
+
 from enum import IntEnum
 
 
@@ -10,10 +14,12 @@ class EveGroupId(IntEnum):
     MOBILE_DEPOT = 1246
     REFINERY = 1406
     PIRATE_FORWARD_OPERATING_BASE = 4644
+    SKYHOOK = 4736
 
 
 class EveTypeId(IntEnum):
+    ASTRAHUS = 35832
     CUSTOMS_OFFICE = 2233
     IHUB = 32458
-    SKYHOOK = 81080
+    ORBITAL_SKYHOOK = 81080
     TCU = 32226
