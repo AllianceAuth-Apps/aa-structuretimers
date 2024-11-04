@@ -31,7 +31,7 @@ def bytes_from_file(filename, chunksize=8192):
 def create_form_data(**kwargs):
     form_data = {
         "eve_solar_system_2": 30004984,
-        "structure_type_2": EveTypeId.ASTRAHUS,
+        "structure_type_2": EveTypeId.ASTRAHUS.value,
         "timer_type": Timer.Type.NONE,
         "objective": Timer.Objective.UNDEFINED,
         "visibility": Timer.Visibility.UNRESTRICTED,
@@ -245,11 +245,11 @@ class TestTimerFormIsValid(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_should_allow_theft_timer_for_skyhook_only(self):
         cases = [
-            (EveTypeId.ORBITAL_SKYHOOK, True),
-            (EveTypeId.ASTRAHUS, False),
-            (EveTypeId.CUSTOMS_OFFICE, False),
-            (EveTypeId.IHUB, False),
-            (EveTypeId.TCU, False),
+            (EveTypeId.ORBITAL_SKYHOOK.value, True),
+            (EveTypeId.ASTRAHUS.value, False),
+            (EveTypeId.CUSTOMS_OFFICE.value, False),
+            (EveTypeId.IHUB.value, False),
+            (EveTypeId.TCU.value, False),
         ]
         for tc in cases:
             with self.subTest(structure_type_id=tc[0]):
