@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+## [1.10.0] - 2025-01-13
+
+### Upgrade notes
+
+Please re-run the data loading command to add the new mercenary dens. This will also add the pirate FOBs:
+
+```sh
+python manage.py structuretimers_load_eve
+```
+
+### Added
+
+- Added support for mercenary dens (#36)
+
+### Fixed
+
+- Pirate FOB not fetch via load eve command
+
 ## [1.9.0] - 2024-11-04
 
 ### Added

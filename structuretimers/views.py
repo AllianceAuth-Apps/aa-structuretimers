@@ -476,7 +476,11 @@ class Select2StructureTypesView(JSONResponseMixin, ListView):
                 eve_group__eve_category_id=EveCategoryId.STRUCTURE, published=True
             )
             | qs.filter(
-                eve_group_id__in=[EveGroupId.CONTROL_TOWER, EveGroupId.MOBILE_DEPOT],
+                eve_group_id__in=[
+                    EveGroupId.CONTROL_TOWER,
+                    EveGroupId.MOBILE_DEPOT,
+                    EveGroupId.MERCENARY_DEN,
+                ],
                 published=True,
             )
             | qs.filter(eve_group_id__in=[EveGroupId.PIRATE_FORWARD_OPERATING_BASE])
