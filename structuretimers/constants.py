@@ -11,9 +11,10 @@ class EveCategoryId(IntEnum):
 
 class EveGroupId(IntEnum):
     CONTROL_TOWER = 365
+    MERCENARY_DEN = 4810
     MOBILE_DEPOT = 1246
-    REFINERY = 1406
     PIRATE_FORWARD_OPERATING_BASE = 4644
+    REFINERY = 1406
     SKYHOOK = 4736
 
 
