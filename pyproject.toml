@@ -33,6 +33,7 @@ dependencies = [
     "django-multiselectfield",
     "redis-simple-mq>=0.4",
     "requests",
+    "puremagic",
 ]
 
 [project.urls]
