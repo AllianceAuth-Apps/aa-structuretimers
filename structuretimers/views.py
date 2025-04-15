@@ -1,14 +1,16 @@
 """Views."""
 
-# pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors,missing-function-docstring, missing-class-docstring
 
 import math
 from copy import deepcopy
+from typing import Iterable
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -30,7 +32,6 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from app_utils.views import (
     JSONResponseMixin,
-    bootstrap_label_html,
     fontawesome_link_button_html,
     link_html,
     yesno_str,
@@ -48,6 +49,11 @@ from .models import DistancesFromStaging, StagingSystem, Timer
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
 MAX_HOURS_PASSED = 2
+
+
+def bootstrap5_label_html(text: str, label: str = "secondary") -> str:
+    """Return HTML for a Bootstrap 5 label."""
+    return format_html('<span class="badge text-bg-{}">{}</span>', label, text)
 
 
 class TimerListView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
@@ -77,7 +83,7 @@ class TimerListView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                "current_time": now().strftime("%Y-%m-%d %H:%M:%S"),
+                "current_time": now().strftime("%H:%M"),
                 "max_hours_expired": MAX_HOURS_PASSED,
                 "title": __title__,
                 "data_tables_page_length": STRUCTURETIMERS_DEFAULT_PAGE_LENGTH,
@@ -120,7 +126,8 @@ class TimerListDataView(
 
     def get_data(self, context):
         data = []
-        for timer in self.object_list:
+        timers: Iterable[Timer] = self.object_list
+        for timer in timers:
             location = self._calc_location_for_timer(timer)
             distances, distance_text = self._calc_distance_for_timer(timer)
             structure = self._calc_structure_for_timer(timer)
@@ -192,20 +199,20 @@ class TimerListDataView(
         tags = []
         is_restricted = False
         if timer.is_opsec:
-            tags.append(bootstrap_label_html("OPSEC", "danger"))
+            tags.append(bootstrap5_label_html("OPSEC", "danger"))
             is_restricted = True
 
         if timer.visibility != Timer.Visibility.UNRESTRICTED:
-            tags.append(bootstrap_label_html(timer.get_visibility_display(), "info"))
+            tags.append(bootstrap5_label_html(timer.get_visibility_display(), "info"))
             is_restricted = True
 
         if timer.is_important:
-            tags.append(bootstrap_label_html("Important", "warning"))
+            tags.append(bootstrap5_label_html("Important", "warning"))
 
         objective = format_html(
             "{}<br>{}",
             mark_safe(
-                bootstrap_label_html(
+                bootstrap5_label_html(
                     timer.get_objective_display(), timer.label_type_for_objective()
                 )
             ),
@@ -215,9 +222,6 @@ class TimerListDataView(
         return is_restricted, objective
 
     def _calc_structure_for_timer(self, timer):
-        timer_type = bootstrap_label_html(
-            timer.get_timer_type_display(), timer.label_type_for_timer_type()
-        )
         if timer.structure_type:
             structure_type_icon_url = timer.structure_type.icon_url(size=64)
             structure_type_name = timer.structure_type.name
@@ -225,20 +229,13 @@ class TimerListDataView(
             structure_type_icon_url = ""
             structure_type_name = "(unknown)"
 
-        structure = format_html(
-            '<div class="flex-container">'
-            '  <div style="padding-top: 4px;"><img src="{}" width="40"></div>'
-            '  <div style="text-align: left;">'
-            "    {}&nbsp;<br>"
-            "    {}"
-            "  </div>"
-            "</div>",
-            structure_type_icon_url,
-            mark_safe(bootstrap_label_html(structure_type_name, "info")),
-            timer_type,
-        )
-
-        return structure
+        context = {
+            "type_icon_url": structure_type_icon_url,
+            "type_name": structure_type_name,
+            "timer_name": timer.get_timer_type_display(),
+            "timer_style": timer.label_type_for_timer_type(),
+        }
+        return render_to_string("structuretimers/partials/structure_box.html", context)
 
     @staticmethod
     def _calc_location_for_timer(timer: Timer):
@@ -282,25 +279,26 @@ class TimerListDataView(
             distance_text = format_html("{}<br>{}", light_years_text, jumps_text)
         return distances, distance_text
 
-    def _get_data_actions(self, timer):
+    def _get_data_actions(self, timer: Timer):
         actions = ""
         if timer.details_image_url or timer.details_notes:
             disabled_html = ""
             button_type = "primary"
-            data_toggle = 'data-toggle="modal" data-target="#modalTimerDetails" '
+            data_toggle = 'data-bs-toggle="modal" data-bs-target="#modalTimerDetails" '
             title = "Show details of this timer"
         else:
-            button_type = "default"
-            disabled_html = ' disabled="disabled"'
+            button_type = "secondary"
+            disabled_html = " disabled"
             data_toggle = ""
             title = "No details available"
         actions += (
             format_html(
-                '<a type="button" id="timerboardBtnDetails" '
+                '<button type="button" id="timerboardBtnDetails" '
                 f'class="btn btn-{button_type}" title="{title}"'
                 f"{data_toggle}"
                 f'data-timerpk="{timer.pk}"{disabled_html}>'
-                '<i class="fas fa-search-plus"></i></a>'
+                '<i class="fas fa-search-plus"></i>'
+                "</button>"
             )
             + "&nbsp;"
         )

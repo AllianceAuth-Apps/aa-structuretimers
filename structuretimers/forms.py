@@ -1,8 +1,9 @@
 """Forms."""
 
 import datetime as dt
-import imghdr
+from typing import Any, Dict
 
+import puremagic
 import requests
 
 from django import forms
@@ -144,87 +145,13 @@ class TimerForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get("eve_solar_system_2"):
-            try:
-                solar_system = EveSolarSystem.objects.get(
-                    id=cleaned_data["eve_solar_system_2"]
-                )
-            except EveSolarSystem.DoesNotExist as ex:
-                raise ValidationError(
-                    {"eve_solar_system_2": _("Invalid solar system.")}
-                ) from ex
-            self.fields["eve_solar_system_2"].widget.choices = [
-                (str(solar_system.id), solar_system.name)
-            ]
+            self._clean_solar_system(cleaned_data)
 
         if cleaned_data.get("structure_type_2"):
-            try:
-                structure_type = EveType.objects.get(
-                    id=cleaned_data["structure_type_2"]
-                )
-            except EveType.DoesNotExist as ex:
-                raise ValidationError(
-                    {"structure_type_2": _("Invalid structure type.")}
-                ) from ex
-
-            self.fields["structure_type_2"].widget.choices = [
-                (str(structure_type.id), structure_type.name)
-            ]
-            if (
-                cleaned_data.get("timer_type") == Timer.Type.MOONMINING
-                and structure_type.eve_group_id != EveGroupId.REFINERY
-            ):
-                raise ValidationError(
-                    {
-                        "timer_type": _(
-                            "Moon mining timers are valid for refineries only."
-                        )
-                    }
-                )
-            if (
-                cleaned_data.get("timer_type") == Timer.Type.THEFT
-                and structure_type.eve_group_id != EveGroupId.SKYHOOK
-            ):
-                raise ValidationError(
-                    {"timer_type": _("Theft timers are valid for skyhook only.")}
-                )
+            self._clean_structure_type(cleaned_data)
 
         if cleaned_data.get("details_image_url"):
-            details_image_url = cleaned_data["details_image_url"]
-            try:
-                r = requests.get(details_image_url, stream=True, timeout=(3.0, 10.0))
-                r.raise_for_status()
-            except (
-                requests.exceptions.ConnectionError,
-                requests.exceptions.HTTPError,
-            ) as ex:
-                logger.warning(
-                    f"Failed to load image from URL: {details_image_url}", exc_info=True
-                )
-                raise forms.ValidationError(
-                    {
-                        "details_image_url": _(
-                            "Failed to load image file. Please double check URL."
-                        )
-                    },
-                    code="details_url_failed_to_load",
-                ) from ex
-            image_type = imghdr.what(None, h=r.content)
-            if image_type not in {"gif", "jpeg", "png"}:
-                logger.warning(
-                    f"{image_type} is not a valid image type "
-                    "for URL: {details_image_url}"
-                )
-                raise forms.ValidationError(
-                    {
-                        "details_image_url": _(
-                            _(
-                                "URL does not point to a valid image file. "
-                                "Valid types are: gif, jpeg, png"
-                            )
-                        )
-                    },
-                    code="details_url_unsupported_type",
-                )
+            self._clean_image(cleaned_data)
 
         days_left = cleaned_data.get("days_left")
         hours_left = cleaned_data.get("hours_left")
@@ -254,6 +181,85 @@ class TimerForm(forms.ModelForm):
             or date is not None
         ):
             cleaned_data["timer_type"] = Timer.Type.NONE.value
+
+    def _clean_structure_type(self, cleaned_data: Dict[str, Any]):
+        try:
+            structure_type = EveType.objects.get(id=cleaned_data["structure_type_2"])
+        except EveType.DoesNotExist as ex:
+            raise ValidationError(
+                {"structure_type_2": _("Invalid structure type.")}
+            ) from ex
+
+        self.fields["structure_type_2"].widget.choices = [
+            (str(structure_type.id), structure_type.name)
+        ]
+        if (
+            cleaned_data.get("timer_type") == Timer.Type.MOONMINING
+            and structure_type.eve_group_id != EveGroupId.REFINERY
+        ):
+            raise ValidationError(
+                {"timer_type": _("Moon mining timers are valid for refineries only.")}
+            )
+        if (
+            cleaned_data.get("timer_type") == Timer.Type.THEFT
+            and structure_type.eve_group_id != EveGroupId.SKYHOOK
+        ):
+            raise ValidationError(
+                {"timer_type": _("Theft timers are valid for skyhook only.")}
+            )
+
+    def _clean_solar_system(self, cleaned_data: Dict[str, Any]):
+        try:
+            solar_system = EveSolarSystem.objects.get(
+                id=cleaned_data["eve_solar_system_2"]
+            )
+        except EveSolarSystem.DoesNotExist as ex:
+            raise ValidationError(
+                {"eve_solar_system_2": _("Invalid solar system.")}
+            ) from ex
+        self.fields["eve_solar_system_2"].widget.choices = [
+            (str(solar_system.id), solar_system.name)
+        ]
+
+    @staticmethod
+    def _clean_image(cleaned_data: Dict[str, Any]):
+        details_image_url = cleaned_data.get("details_image_url", "")
+        try:
+            r = requests.get(details_image_url, stream=True, timeout=(3.0, 10.0))
+            r.raise_for_status()
+        except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.HTTPError,
+        ) as ex:
+            logger.warning(
+                f"Failed to load image from URL: {details_image_url}", exc_info=True
+            )
+            raise forms.ValidationError(
+                {
+                    "details_image_url": _(
+                        "Failed to load image file. Please double check URL."
+                    )
+                },
+                code="details_url_failed_to_load",
+            ) from ex
+
+        image_type = puremagic.from_string(r.content, mime=True)
+        if image_type not in {"image/gif", "image/jpeg", "image/png"}:
+            logger.warning(
+                f"{image_type} is not a valid image type "
+                "for URL: {details_image_url}"
+            )
+            raise forms.ValidationError(
+                {
+                    "details_image_url": _(
+                        _(
+                            "URL does not point to a valid image file. "
+                            "Valid types are: gif, jpeg, png"
+                        )
+                    )
+                },
+                code="details_url_unsupported_type",
+            )
 
     def save(self, commit=True):
         timer = super().save(commit=False)

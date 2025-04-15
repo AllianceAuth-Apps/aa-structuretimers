@@ -29,12 +29,15 @@ function getCurrentEveTimeString() {
 function updateClock() {
     document.getElementById("current-time").innerHTML = moment()
         .utc()
-        .format("YYYY-MM-DD HH:mm:ss");
+        .format("HH:mm");
 }
 
 /* return countdown to given date as string */
 function dateToCountdownStr(date) {
-    let duration = moment.duration(moment(date).utc() - moment(), "milliseconds");
+    let duration = moment.duration(
+        moment(date).utc() - moment(),
+        "milliseconds"
+    );
     if (duration > 0) {
         return durationToCountdownStr(duration);
     } else {
@@ -107,6 +110,7 @@ function createFilterDropDown(
             },
         ],
         bootstrap: true,
+        bootstrap_version: 5,
         autoSize: false,
     };
     if (hasPermOPSEC) {
@@ -133,12 +137,15 @@ $(document).ready(function () {
     const titleOwner = elem.getAttribute("data-titleOwner");
     const titleVisibility = elem.getAttribute("data-titleVisibility");
     const hasPermOPSEC = elem.getAttribute("data-hasPermOPSEC") == "True";
-    const dataTablesPageLength = Number(elem.getAttribute("data-dataTablesPageLength"));
-    const dataTablesPaging = elem.getAttribute("data-dataTablesPaging") == "True";
+    const dataTablesPageLength = Number(
+        elem.getAttribute("data-dataTablesPageLength")
+    );
+    const dataTablesPaging =
+        elem.getAttribute("data-dataTablesPaging") == "True";
     const tabId = elem.getAttribute("data-tabId");
 
     /* activate selected tab */
-    $('a[href="#' + tabId + '"]').tab("show");
+    $('button[data-bs-target="#' + tabId + '"]').tab("show");
 
     /* Update modal with requested timer */
     $("#modalTimerDetails").on("show.bs.modal", function (event) {

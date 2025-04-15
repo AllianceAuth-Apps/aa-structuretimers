@@ -6,6 +6,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django_webtest import WebTest
 
+from structuretimers.admin import _get_multiselect_display
 from structuretimers.models import NotificationRule, StagingSystem, Timer
 
 from .testdata.factory import (
@@ -194,3 +195,21 @@ class TestStagingSystemAdmin(LoadTestDataMixin, TestCase):
             StagingSystem.objects.filter(is_main=True).get().eve_solar_system,
             self.system_abune,
         )
+
+
+class TestGetMultiselectDisplay(TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.choices = [
+            (1, "alpha"),
+            (2, "bravo"),
+        ]
+
+    def test_returns_value_if_found(self):
+        self.assertEqual(_get_multiselect_display(1, self.choices), "alpha")
+        self.assertEqual(_get_multiselect_display(2, self.choices), "bravo")
+
+    def test_raises_exception_if_not_found(self):
+        with self.assertRaises(ValueError):
+            _get_multiselect_display(3, self.choices)

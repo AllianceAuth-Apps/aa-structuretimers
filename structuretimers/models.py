@@ -1,8 +1,10 @@
 """Models."""
 
+# pylint: disable=too-many-lines
+
 import json
 from time import sleep
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import dhooks_lite
 from multiselectfield import MultiSelectField
@@ -12,7 +14,6 @@ from simple_mq import SimpleMQ
 from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
-from django.utils.functional import classproperty
 from django.utils.translation import gettext_lazy as _
 from eveuniverse.helpers import meters_to_ly
 from eveuniverse.models import EveRegion, EveSolarSystem, EveType
@@ -242,6 +243,7 @@ class DiscordWebhook(models.Model):
 
     @classmethod
     def create_discord_link(cls, name: str, url: str) -> str:
+        """Returns a link in markdown format for Disord."""
         return f"[{str(name)}]({str(url)})"
 
     def send_test_message(self, user: User = None) -> Tuple[str, bool]:
@@ -270,6 +272,7 @@ class DiscordWebhook(models.Model):
         return __title__
 
 
+# pylint: disable=too-many-locals
 class Timer(models.Model):
     """A structure timer"""
 
@@ -306,8 +309,8 @@ class Timer(models.Model):
         THEFT = "TF", _("Theft")
         PRELIMINARY = "PL", _("Preliminary")  # special timer with no date
 
-        @classproperty
-        def choices_for_notification_rules(cls) -> list:
+        @classmethod
+        def choices_for_notification_rules(cls) -> List["Timer.Type"]:
             """Subset of choices suitable for creating notification rules."""
             return [choice for choice in cls.choices if choice[0] != cls.PRELIMINARY]
 
@@ -476,6 +479,7 @@ class Timer(models.Model):
         return f"{timer_type} timer for {structure_name}{date}"
 
     def get_absolute_url(self) -> str:
+        """Returns the absolute URL of a timer."""
         url = reverse("structuretimers:timer_list")
         return (
             f"{url}?tab=preliminary"
@@ -548,7 +552,7 @@ class Timer(models.Model):
     def label_type_for_timer_type(self) -> str:
         """returns the Boostrap label type for a timer_type"""
         label_types_map = {
-            self.Type.NONE: "default",
+            self.Type.NONE: "secondary",
             self.Type.ARMOR: "danger",
             self.Type.HULL: "danger",
             self.Type.FINAL: "danger",
@@ -560,7 +564,7 @@ class Timer(models.Model):
         if self.timer_type in label_types_map:
             label_type = label_types_map[self.timer_type]
         else:
-            label_type = "default"
+            label_type = "secondary"
         return label_type
 
     def label_type_for_objective(self) -> str:
@@ -569,12 +573,12 @@ class Timer(models.Model):
             self.Objective.FRIENDLY: "primary",
             self.Objective.HOSTILE: "danger",
             self.Objective.NEUTRAL: "info",
-            self.Objective.UNDEFINED: "default",
+            self.Objective.UNDEFINED: "secondary",
         }
         if self.objective in label_types_map:
             label_type = label_types_map[self.objective]
         else:
-            label_type = "default"
+            label_type = "secondary"
         return label_type
 
     def send_notification(
@@ -723,8 +727,8 @@ class NotificationRule(models.Model):
         help_text="whether this rule is currently active",
     )
     require_timer_types = MultiSelectField(
-        choices=Timer.Type.choices_for_notification_rules,
-        max_length=get_max_length(Timer.Type.choices_for_notification_rules, None),
+        choices=Timer.Type.choices_for_notification_rules(),
+        max_length=get_max_length(Timer.Type.choices_for_notification_rules(), None),
         blank=True,
         help_text=(
             "Timer must have one of the given timer types "
@@ -732,8 +736,8 @@ class NotificationRule(models.Model):
         ),
     )
     exclude_timer_types = MultiSelectField(
-        choices=Timer.Type.choices_for_notification_rules,
-        max_length=get_max_length(Timer.Type.choices_for_notification_rules, None),
+        choices=Timer.Type.choices_for_notification_rules(),
+        max_length=get_max_length(Timer.Type.choices_for_notification_rules(), None),
         blank=True,
         help_text="Timer must NOT have one of the given timer types",
     )
@@ -865,12 +869,14 @@ class NotificationRule(models.Model):
 
     @property
     def ping_type_text(self) -> str:
+        """Returns the ping type as string."""
         return self.PingType(self.ping_type).to_text()
 
     def prepend_ping_text(self, text: str) -> str:
         """prepends ping text to given text and returns it as new text string"""
         return f"{self.ping_type_text} {text}" if self.ping_type_text else text
 
+    # pylint: disable=too-many-branches
     def is_matching_timer(self, timer: "Timer") -> bool:
         """returns True if notification rule is matching the given timer, else False"""
         if timer.date is None:
@@ -937,14 +943,6 @@ class NotificationRule(models.Model):
             is_matching = timer.space_type not in self.exclude_space_types
 
         return is_matching
-
-    @staticmethod
-    def get_multiselect_display(value: Any, choices: List[Tuple[Any, str]]) -> str:
-        for choice, text in choices:
-            if str(choice) == str(value):
-                return text
-
-        raise ValueError(f"Invalid choice: {value}")
 
 
 class ScheduledNotification(models.Model):
