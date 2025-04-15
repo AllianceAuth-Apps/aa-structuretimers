@@ -27,7 +27,7 @@ classifiers = [
 ]
 dependencies = [
     "allianceauth-app-utils>=1.17.1",
-    "allianceauth>=3",
+    "allianceauth>=3,<5",
     "dhooks_lite>=1.0.0",
     "django-eveuniverse>=0.16",
     "django-multiselectfield",
