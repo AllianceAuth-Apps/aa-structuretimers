@@ -96,7 +96,7 @@ class TestTimer(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_label_type_for_timer_type(self):
         timer = Timer(date=now())
-        self.assertEqual(timer.label_type_for_timer_type(), "default")
+        self.assertEqual(timer.label_type_for_timer_type(), "secondary")
 
         timer.timer_type = Timer.Type.ARMOR
         self.assertEqual(timer.label_type_for_timer_type(), "danger")
@@ -106,7 +106,7 @@ class TestTimer(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_label_type_for_objective(self):
         timer = Timer(date=now())
-        self.assertEqual(timer.label_type_for_objective(), "default")
+        self.assertEqual(timer.label_type_for_objective(), "secondary")
 
         timer.objective = Timer.Objective.HOSTILE
         self.assertEqual(timer.label_type_for_objective(), "danger")

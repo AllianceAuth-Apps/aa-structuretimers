@@ -3,27 +3,31 @@
 {% load static %}
 {% load i18n %}
 
-{% block details %}
-    <div class="col-md-8 col-md-offset-2">
-        <div class="row">
-            {% if form.errors %}
-                <p class="text-danger">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong> {% translate "Please correct the input errors below" %}</strong>
-                </p>
-            {% endif %}
-            <form id="add-timer-form" class="form-signin" role="form" action="" method="POST">
-                {% csrf_token %}
-                {{ form|bootstrap }}
-                <br/>
-                <p>
-                    <i class="fas fa-asterisk"></i> {% translate "required fields" %}
-                </p>
-                <button class="btn btn-primary" type="submit">
-                    {% block submit_button_text %}{% endblock %}
-                </button>
-                {% include 'structuretimers/partials/cancel_button.html' %}
-            </form>
+{% block content %}
+    <div class="row">
+        <div class="col col-lg-8">
+            <div class="card card-default">
+                <div class="card-body">
+                    {% if form.errors %}
+                        <p class="text-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong> {% translate "Please correct the input errors below" %}</strong>
+                        </p>
+                    {% endif %}
+                    <form id="add-timer-form" class="form-signin" role="form" action="" method="POST">
+                        {% csrf_token %}
+                        {{ form|bootstrap }}
+                        <br/>
+                        <p>
+                            <i class="fas fa-asterisk"></i> {% translate "required fields" %}
+                        </p>
+                        <button class="btn btn-primary" type="submit">
+                            {% block submit_button_text %}{% endblock %}
+                        </button>
+                        {% include 'structuretimers/partials/cancel_button.html' %}
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -36,7 +40,7 @@
     {{ NIGHT_MODE|json_script:"night-mode-data" }}
     {{ LANGUAGE_CODE|json_script:"language-code-data" }}
 
-{% endblock details %}
+{% endblock content %}
 
 {% block extra_css %}
     <link href="{% static 'structuretimers/vendor/select2-4.1.0-beta.1/select2.min.css' %}" rel="stylesheet" />

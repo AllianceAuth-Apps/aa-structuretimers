@@ -552,7 +552,7 @@ class Timer(models.Model):
     def label_type_for_timer_type(self) -> str:
         """returns the Boostrap label type for a timer_type"""
         label_types_map = {
-            self.Type.NONE: "default",
+            self.Type.NONE: "secondary",
             self.Type.ARMOR: "danger",
             self.Type.HULL: "danger",
             self.Type.FINAL: "danger",
@@ -564,7 +564,7 @@ class Timer(models.Model):
         if self.timer_type in label_types_map:
             label_type = label_types_map[self.timer_type]
         else:
-            label_type = "default"
+            label_type = "secondary"
         return label_type
 
     def label_type_for_objective(self) -> str:
@@ -573,12 +573,12 @@ class Timer(models.Model):
             self.Objective.FRIENDLY: "primary",
             self.Objective.HOSTILE: "danger",
             self.Objective.NEUTRAL: "info",
-            self.Objective.UNDEFINED: "default",
+            self.Objective.UNDEFINED: "secondary",
         }
         if self.objective in label_types_map:
             label_type = label_types_map[self.objective]
         else:
-            label_type = "default"
+            label_type = "secondary"
         return label_type
 
     def send_notification(

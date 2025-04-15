@@ -1,11 +1,27 @@
-{% extends 'allianceauth/base.html' %}
+{% extends 'allianceauth/base-bs5.html' %}
 {% load i18n %}
+
+{% block header_nav_brand %}{% translate "Structure Timers" %}{% endblock %}
 
 {% block page_title %}{% translate title %}{% endblock %}
 
-{% block content %}
-    <h2 class="text-center">{{ title }}</h2>
-    <div class="col-lg-12 container">
-        {% block details %}{% endblock %}
-    </div>
+{% block content %}{% endblock %}
+
+{% block header_nav_collapse_right %}
+    {% if perms.structuretimers.create_timer %}
+        <li class="nav-item">
+            <a class="btn btn-success me-2" href="{% url 'structuretimers:add' %}" title="{% translate 'Add new timer' %}">
+                <i class="fa-solid fa-plus"></i>&nbsp;Add timer
+            </a>
+        </li>
+    {% endif %}
+    <span class="navbar-text">
+        <span class="mx-2" id="current-time" title="Current EVE time">{{ current_time }}</span>
+    </span>
+{% endblock header_nav_collapse_right %}
+
+{% block header_nav_user_character_control %}
+    {% comment %}
+        This block is left empty intentionally to disable defaults.
+    {% endcomment %}
 {% endblock %}

@@ -3,17 +3,16 @@ Global styles shared by all Kalkoken apps - Version 0.2.1
 */
 
 @media all {
-
     /* Bootstrap Tabs */
-    .template-light-mode .nav-tabs > li.active > a{
+    .template-light-mode .nav-tabs > li.active > a {
         background-color: rgb(236, 240, 241) !important;
         color: black !important;
     }
-    .template-dark-mode .nav-tabs > li.active > a{
+    .template-dark-mode .nav-tabs > li.active > a {
         background-color: rgb(70, 69, 69) !important;
         color: white !important;
     }
-    .panel-tabs {
+    .card-tabs {
         border-top: none;
         border-top-left-radius: 0%;
         border-top-right-radius: 0%;
@@ -45,6 +44,6 @@ Global styles shared by all Kalkoken apps - Version 0.2.1
     /* Bootstrap modals */
     .modal-xl {
         width: 90%;
-        max-width:1200px;
+        max-width: 1200px;
     }
 }
