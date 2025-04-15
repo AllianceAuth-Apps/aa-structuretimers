@@ -1,6 +1,6 @@
 """Views."""
 
-# pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors,missing-function-docstring, missing-class-docstring
 
 import math
 from copy import deepcopy

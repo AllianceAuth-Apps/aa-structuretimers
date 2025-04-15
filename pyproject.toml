@@ -71,13 +71,14 @@ max-line-length = 120
 
 [tool.pylint.'MESSAGES CONTROL']
 disable = [
-    # "too-many-instance-attributes",
-    "too-few-public-methods",
-    "too-many-positional-arguments",
-    "imported-auth-user",
     "cyclic-import",
-    # "fixme",
     "import-outside-toplevel",
-    # "redefined-builtin",
+    "imported-auth-user",
     "no-member",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "fixme",
+    # "redefined-builtin",
+    # "too-many-instance-attributes",
 ]

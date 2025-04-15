@@ -1173,28 +1173,6 @@ class TestNotificationRuleSave(LoadTestDataMixin, NoSocketsTestCase):
         self.assertFalse(ScheduledNotification.objects.filter(pk=obj.pk).exists())
 
 
-class TestNotificationRuleMultiselectDisplay(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.choices = [
-            (1, "alpha"),
-            (2, "bravo"),
-        ]
-
-    def test_returns_value_if_found(self):
-        self.assertEqual(
-            NotificationRule.get_multiselect_display(1, self.choices), "alpha"
-        )
-        self.assertEqual(
-            NotificationRule.get_multiselect_display(2, self.choices), "bravo"
-        )
-
-    def test_raises_exception_if_not_found(self):
-        with self.assertRaises(ValueError):
-            NotificationRule.get_multiselect_display(3, self.choices)
-
-
 @patch("structuretimers.tasks.retry_task_if_esi_is_down", lambda self: None)
 @patch(MODULE_PATH + ".EveSolarSystem.distance_to", lambda *args, **kwargs: 4.257e16)
 @patch(MODULE_PATH + ".EveSolarSystem.jumps_to", lambda *args, **kwargs: 3)

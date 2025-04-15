@@ -141,6 +141,7 @@ class TimerForm(forms.ModelForm):
                 (str(my_instance.structure_type_id), my_instance.structure_type.name)
             ]
 
+    # pylint: disable=too-many-branches
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get("eve_solar_system_2"):

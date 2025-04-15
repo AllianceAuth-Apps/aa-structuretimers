@@ -2,7 +2,7 @@
 
 # pylint: disable=missing-class-docstring, missing-function-docstring
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from django import forms
 from django.contrib import admin
@@ -68,50 +68,44 @@ def field_nice_display(name: str) -> str:
 class NotificationRuleAdminForm(forms.ModelForm):
     def clean(self) -> Dict[str, Any]:
         cleaned_data = super().clean()
-        self._validate_not_same_options_chosen(
+        _validate_not_same_options_chosen(
             cleaned_data,
             "require_timer_types",
             "exclude_timer_types",
-            lambda x: NotificationRule.get_multiselect_display(x, Timer.Type.choices),
+            lambda x: _get_multiselect_display(x, Timer.Type.choices),
         )
-        self._validate_not_same_options_chosen(
+        _validate_not_same_options_chosen(
             cleaned_data,
             "require_objectives",
             "exclude_objectives",
-            lambda x: NotificationRule.get_multiselect_display(
-                x, Timer.Objective.choices
-            ),
+            lambda x: _get_multiselect_display(x, Timer.Objective.choices),
         )
-        self._validate_not_same_options_chosen(
+        _validate_not_same_options_chosen(
             cleaned_data,
             "require_visibility",
             "exclude_visibility",
-            lambda x: NotificationRule.get_multiselect_display(
-                x, Timer.Visibility.choices
-            ),
+            lambda x: _get_multiselect_display(x, Timer.Visibility.choices),
         )
-        self._validate_not_same_options_chosen(
+        _validate_not_same_options_chosen(
             cleaned_data,
             "require_corporations",
             "exclude_corporations",
         )
-        self._validate_not_same_options_chosen(
+        _validate_not_same_options_chosen(
             cleaned_data,
             "require_alliances",
             "exclude_alliances",
         )
-        self._validate_not_same_options_chosen(
+        _validate_not_same_options_chosen(
             cleaned_data,
             "require_regions",
             "exclude_regions",
         )
-        self._validate_not_same_options_chosen(
+        _validate_not_same_options_chosen(
             cleaned_data,
             "require_space_types",
             "exclude_space_types",
-            lambda x: NotificationRule.get_multiselect_display(
-                x, Timer.SpaceType.choices
-            ),
+            lambda x: _get_multiselect_display(x, Timer.SpaceType.choices),
         )
         if (
             cleaned_data["trigger"] == NotificationRule.Trigger.SCHEDULED_TIME_REACHED
@@ -131,24 +125,27 @@ class NotificationRuleAdminForm(forms.ModelForm):
 
         return cleaned_data
 
-    @staticmethod
-    def _validate_not_same_options_chosen(
-        cleaned_data, field_name_1, field_name_2, display_func=lambda x: x
-    ) -> None:
-        same_options = set(cleaned_data[field_name_1]).intersection(
-            set(cleaned_data[field_name_2])
+
+def _validate_not_same_options_chosen(
+    cleaned_data, field_name_1, field_name_2, display_func=lambda x: x
+) -> None:
+    same_options = set(cleaned_data[field_name_1]).intersection(
+        set(cleaned_data[field_name_2])
+    )
+    if same_options:
+        same_options_text = ", ".join(map(str, [display_func(x) for x in same_options]))
+        raise ValidationError(
+            f"Can not choose same options for {field_nice_display(field_name_1)} "
+            f"& {field_nice_display(field_name_2)}: {same_options_text}"
         )
-        if same_options:
-            same_options_text = ", ".join(
-                map(
-                    str,
-                    [display_func(x) for x in same_options],
-                )
-            )
-            raise ValidationError(
-                f"Can not choose same options for {field_nice_display(field_name_1)} "
-                f"& {field_nice_display(field_name_2)}: {same_options_text}"
-            )
+
+
+def _get_multiselect_display(value: Any, choices: List[Tuple[Any, str]]) -> str:
+    for choice, text in choices:
+        if str(choice) == str(value):
+            return text
+
+    raise ValueError(f"Invalid choice: {value}")
 
 
 @admin.register(NotificationRule)
@@ -256,10 +253,7 @@ class NotificationRuleAdmin(admin.ModelAdmin):
             text = ", ".join(
                 map(
                     str,
-                    [
-                        NotificationRule.get_multiselect_display(x, choices)
-                        for x in getattr(obj, field)
-                    ],
+                    [_get_multiselect_display(x, choices) for x in getattr(obj, field)],
                 )
             )
             self._append_field_to_clauses(clauses, field, text)
