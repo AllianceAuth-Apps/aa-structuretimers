@@ -9,7 +9,7 @@ from django.core.cache import cache
 from django.db import models
 from django.test import TestCase, override_settings
 from django.utils.timezone import now
-from eveuniverse.models import EveRegion, EveSolarSystem
+from eveuniverse.models import EveRegion, EveSolarSystem, EveType
 
 from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 from app_utils.json import JSONDateTimeDecoder
@@ -1005,6 +1005,34 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
         # given
         timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule(exclude_space_types=[Timer.SpaceType.LOW_SEC])
+        # when/then
+        self.assertFalse(rule.is_matching_timer(timer))
+
+    def test_should_match_include_structure_types(self):
+        # given
+        timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
+        rule = create_notification_rule(include_structure_type=[Timer.StructureType.KEEPSTAR])
+        # when/then
+        self.assertTrue(rule.is_matching_timer(timer))
+
+    def test_should_not_match_include_structure_types(self):
+        # given
+        timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
+        rule = create_notification_rule(include_structure_type=[Timer.StructureType.FORTIZAR])
+        # when/then
+        self.assertFalse(rule.is_matching_timer(timer))
+
+    def test_should_match_exclude_structure_types(self):
+        # given
+        timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
+        rule = create_notification_rule(include_structure_type=[Timer.StructureType.FORTIZAR])
+        # when/then
+        self.assertTrue(rule.is_matching_timer(timer))
+
+    def test_should_not_match_exclude_structure_types(self):
+        # given
+        timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
+        rule = create_notification_rule(include_structure_type=[Timer.StructureType.KEEPSTAR])
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 

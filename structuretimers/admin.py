@@ -107,6 +107,12 @@ class NotificationRuleAdminForm(forms.ModelForm):
             "exclude_space_types",
             lambda x: _get_multiselect_display(x, Timer.SpaceType.choices),
         )
+        _validate_not_same_options_chosen(
+            cleaned_data,
+            "require_structure_types",
+            "exclude_structure_types",
+            lambda x: _get_multiselect_display(x, Timer.StructureType.choices),
+        )
         if (
             cleaned_data["trigger"] == NotificationRule.Trigger.SCHEDULED_TIME_REACHED
             and cleaned_data["scheduled_time"] is None
@@ -201,6 +207,8 @@ class NotificationRuleAdmin(admin.ModelAdmin):
                     "exclude_regions",
                     "require_space_types",
                     "exclude_space_types",
+                    "require_structure_types",
+                    "exclude_structure_types",
                     "require_visibility",
                     "exclude_visibility",
                     "is_important",
@@ -240,6 +248,16 @@ class NotificationRuleAdmin(admin.ModelAdmin):
                 "exclude_space_types",
                 self._add_to_clauses_1,
                 Timer.SpaceType.choices,
+            ),
+            (
+                "require_structure_types",
+                self._add_to_clauses_1,
+                Timer.StructureType.choices,
+            ),
+            (
+                "exclude_structure_types",
+                self._add_to_clauses_1,
+                Timer.StructureType.choices,
             ),
             ("is_important", self._add_to_clauses_3, None),
             ("is_opsec", self._add_to_clauses_3, None),

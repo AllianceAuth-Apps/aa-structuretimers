@@ -354,6 +354,24 @@ class Timer(models.Model):
             raise NotImplementedError(
                 f"System with unknown space type: {eve_solar_system}"
             )
+            
+    class StructureType(models.TextChoices):
+        """A structure type."""
+
+        ASTRAHUS = "AST", _("Astrahus")
+        FORTIZAR = "FOR", _("Fortizar")
+        KEEPSTAR = "KSP", _("Keepstar")
+        ATHANOR = "ATH", _("Athanor")
+        TATARA = "TAT", _("Tatara")
+        RAITARU = "RAT", _("Raitaru")
+        AZBEL = "AZB", _("Azbel")
+        SOTIYO = "SOT", _("Sotiyo")
+        ANSIBLEX = "ANS", _("Ansiblex Jump Bridge")
+        PHAROLUX = "PHA", _("Pharolux Cyno Beacon")
+        TENEBREX = "TEN", _("Tenebrex Cyno Jammer")
+        SKYHOOK = "SKY", _("Orbital Skyhook")
+        METANOX = "MET", _("Metanox Moon Drill")
+        SHUB = "SHU", _("Sovereignity Hub")
 
     date = models.DateTimeField(
         db_index=True,
@@ -841,6 +859,20 @@ class NotificationRule(models.Model):
         blank=True,
         help_text="Space Type must NOT be one of the selected",
     )
+    require_structure_types = MultiSelectField(
+        choices=Timer.StructureType.choices,
+        max_length=get_max_length(Timer.StructureType.choices, None),
+        blank=True,
+        help_text=(
+            "Structure type must be one of the selected or leave blank to match any."
+        ),
+    )
+    exclude_structure_types = MultiSelectField(
+        choices=Timer.StructureType.choices,
+        max_length=get_max_length(Timer.StructureType.choices, None),
+        blank=True,
+        help_text="Structure type must NOT be one of the selected",
+    )
 
     objects = NotificationRuleManager()
 
@@ -941,6 +973,16 @@ class NotificationRule(models.Model):
 
         if is_matching and self.exclude_space_types:
             is_matching = timer.space_type not in self.exclude_space_types
+
+        if is_matching and self.require_structure_types:
+            is_matching = (
+                timer.structure_type.name in self.require_structure_types
+            )
+        
+        if is_matching and self.exclude_structure_types:
+            is_matching = (
+                timer.structure_type.name not in self.exclude_structure_types
+            )
 
         return is_matching
 
