@@ -1011,28 +1011,36 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
     def test_should_match_include_structure_types(self):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
-        rule = create_notification_rule(include_structure_type=[Timer.StructureType.KEEPSTAR])
+        rule = create_notification_rule(
+            include_structure_type=[Timer.StructureType.KEEPSTAR]
+        )
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_include_structure_types(self):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
-        rule = create_notification_rule(include_structure_type=[Timer.StructureType.FORTIZAR])
+        rule = create_notification_rule(
+            include_structure_type=[Timer.StructureType.FORTIZAR]
+        )
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
     def test_should_match_exclude_structure_types(self):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
-        rule = create_notification_rule(include_structure_type=[Timer.StructureType.FORTIZAR])
+        rule = create_notification_rule(
+            include_structure_type=[Timer.StructureType.FORTIZAR]
+        )
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_exclude_structure_types(self):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
-        rule = create_notification_rule(include_structure_type=[Timer.StructureType.KEEPSTAR])
+        rule = create_notification_rule(
+            include_structure_type=[Timer.StructureType.KEEPSTAR]
+        )
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 

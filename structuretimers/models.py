@@ -981,14 +981,10 @@ class NotificationRule(models.Model):
             is_matching = timer.space_type not in self.exclude_space_types
 
         if is_matching and self.require_structure_types:
-            is_matching = (
-                timer.structure_type.id in self.require_structure_types
-            )
-        
+            is_matching = timer.structure_type.id in self.require_structure_types
+
         if is_matching and self.exclude_structure_types:
-            is_matching = (
-                timer.structure_type.id not in self.exclude_structure_types
-            )
+            is_matching = timer.structure_type.id not in self.exclude_structure_types
 
         return is_matching
 
