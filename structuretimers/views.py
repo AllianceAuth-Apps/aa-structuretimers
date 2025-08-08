@@ -42,9 +42,8 @@ from .app_settings import (
     STRUCTURETIMERS_DEFAULT_PAGE_LENGTH,
     STRUCTURETIMERS_PAGING_ENABLED,
 )
-from .constants import EveCategoryId, EveGroupId, EveTypeId
 from .forms import TimerForm
-from .models import DistancesFromStaging, StagingSystem, Timer
+from .models import DistancesFromStaging, StagingSystem, StructureTimersEveType, Timer
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
@@ -469,29 +468,7 @@ class Select2StructureTypesView(JSONResponseMixin, ListView):
         term = self.request.GET.get("term")
         if not term:
             return qs.none()
-        qs = (
-            qs.filter(
-                eve_group__eve_category_id=EveCategoryId.STRUCTURE, published=True
-            )
-            | qs.filter(
-                eve_group_id__in=[
-                    EveGroupId.CONTROL_TOWER,
-                    EveGroupId.MOBILE_DEPOT,
-                    EveGroupId.MERCENARY_DEN,
-                ],
-                published=True,
-            )
-            | qs.filter(eve_group_id__in=[EveGroupId.PIRATE_FORWARD_OPERATING_BASE])
-            | qs.filter(
-                id__in=[
-                    EveTypeId.CUSTOMS_OFFICE,
-                    EveTypeId.ORBITAL_SKYHOOK,
-                    EveTypeId.IHUB,
-                    EveTypeId.TCU,
-                ]
-            )
-        )
-        return qs.distinct().filter(name__icontains=term)
+        return StructureTimersEveType.objects.filter(name__icontains=term)
 
     def get_context_data(self, **kwargs):
         if self.object_list:

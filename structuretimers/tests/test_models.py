@@ -1012,7 +1012,7 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
         rule = create_notification_rule(
-            require_structure_types=[Timer.StructureType.RAITARU]
+            require_structure_types=[EveType.objects.get(name="Raitaru")]
         )
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
@@ -1021,7 +1021,7 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
         rule = create_notification_rule(
-            require_structure_types=[Timer.StructureType.FORTIZAR]
+            require_structure_types=[EveType.objects.get(name="Fortizar")]
         )
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
@@ -1030,7 +1030,7 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
         rule = create_notification_rule(
-            exclude_structure_types=[Timer.StructureType.FORTIZAR]
+            exclude_structure_types=[EveType.objects.get(name="Fortizar")]
         )
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
@@ -1039,7 +1039,7 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
         rule = create_notification_rule(
-            exclude_structure_types=[Timer.StructureType.RAITARU]
+            exclude_structure_types=[EveType.objects.get(name="Raitaru")]
         )
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))

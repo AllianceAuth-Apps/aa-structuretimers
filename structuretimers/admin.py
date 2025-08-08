@@ -20,6 +20,7 @@ from .models import (
     NotificationRule,
     ScheduledNotification,
     StagingSystem,
+    StructureTimersEveType,
     Timer,
 )
 
@@ -105,13 +106,11 @@ class NotificationRuleAdminForm(forms.ModelForm):
             cleaned_data,
             "require_space_types",
             "exclude_space_types",
-            lambda x: _get_multiselect_display(x, Timer.SpaceType.choices),
         )
         _validate_not_same_options_chosen(
             cleaned_data,
             "require_structure_types",
             "exclude_structure_types",
-            lambda x: _get_multiselect_display(x, Timer.StructureType.choices),
         )
         if (
             cleaned_data["trigger"] == NotificationRule.Trigger.SCHEDULED_TIME_REACHED
@@ -176,6 +175,8 @@ class NotificationRuleAdmin(admin.ModelAdmin):
         "exclude_corporations",
         "require_regions",
         "exclude_regions",
+        "require_structure_types",
+        "exclude_structure_types",
     )
     fieldsets = (
         (
@@ -251,13 +252,13 @@ class NotificationRuleAdmin(admin.ModelAdmin):
             ),
             (
                 "require_structure_types",
-                self._add_to_clauses_1,
-                Timer.StructureType.choices,
+                self._add_to_clauses_2,
+                None,
             ),
             (
                 "exclude_structure_types",
-                self._add_to_clauses_1,
-                Timer.StructureType.choices,
+                self._add_to_clauses_2,
+                None,
             ),
             ("is_important", self._add_to_clauses_3, None),
             ("is_opsec", self._add_to_clauses_3, None),
@@ -313,6 +314,8 @@ class NotificationRuleAdmin(admin.ModelAdmin):
             )
         elif db_field.name in {"require_regions", "exclude_regions"}:
             kwargs["queryset"] = EveRegion.objects.order_by(Lower("name"))
+        elif db_field.name in {"require_structure_types", "exclude_structure_types"}:
+            kwargs["queryset"] = StructureTimersEveType.objects.order_by(Lower("name"))
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 

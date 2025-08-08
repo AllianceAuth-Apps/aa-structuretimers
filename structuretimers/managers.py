@@ -9,6 +9,7 @@ from django.db import models
 from django.utils.timezone import now
 
 from .app_settings import STRUCTURETIMERS_TIMERS_OBSOLETE_AFTER_DAYS
+from .constants import EveCategoryId, EveGroupId, EveTypeId
 
 
 class NotificationRuleQuerySet(models.QuerySet):
@@ -31,6 +32,34 @@ class NotificationRuleManagerBase(models.Manager):
 NotificationRuleManager = NotificationRuleManagerBase.from_queryset(
     NotificationRuleQuerySet
 )
+
+
+class StructureListManager(models.Manager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = (
+            qs.filter(
+                eve_group__eve_category_id=EveCategoryId.STRUCTURE, published=True
+            )
+            | qs.filter(
+                eve_group_id__in=[
+                    EveGroupId.CONTROL_TOWER,
+                    EveGroupId.MOBILE_DEPOT,
+                    EveGroupId.MERCENARY_DEN,
+                ],
+                published=True,
+            )
+            | qs.filter(eve_group_id__in=[EveGroupId.PIRATE_FORWARD_OPERATING_BASE])
+            | qs.filter(
+                id__in=[
+                    EveTypeId.CUSTOMS_OFFICE,
+                    EveTypeId.ORBITAL_SKYHOOK,
+                    EveTypeId.IHUB,
+                    EveTypeId.TCU,
+                ]
+            )
+        )
+        return qs.distinct()
 
 
 class TimerQuerySet(models.QuerySet):

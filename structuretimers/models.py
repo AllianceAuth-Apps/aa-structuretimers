@@ -36,7 +36,12 @@ from .app_settings import (
     STRUCTURETIMER_NOTIFICATION_SET_AVATAR,
     STRUCTURETIMERS_NOTIFICATIONS_ENABLED,
 )
-from .managers import DistancesFromStagingManager, NotificationRuleManager, TimerManager
+from .managers import (
+    DistancesFromStagingManager,
+    NotificationRuleManager,
+    StructureListManager,
+    TimerManager,
+)
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 
@@ -355,30 +360,6 @@ class Timer(models.Model):
                 f"System with unknown space type: {eve_solar_system}"
             )
 
-    class StructureType(models.TextChoices):
-        """A structure type."""
-
-        ASTRAHUS = 35832, _("Astrahus")
-        FORTIZAR = 35833, _("Fortizar")
-        MOREAU_FORTIZAR = 47512, _("'Moreau' Fortizar")
-        DRACCOUS_FORTIZAR = 47513, _("'Draccous' Fortizar")
-        HORIZON_FORTIZAR = 47514, _("'Horizon' Fortizar")
-        MARGINIS_FORTIZAR = 47515, _("'Marginis' Fortizar")
-        PROMETHEUS_FORTIZAR = 47516, _("'Prometheus' Fortizar")
-        KEEPSTAR = 35834, _("Keepstar")
-        PALATINE_KEEPSTAR = 40340, _("Upwell Palatine Keepstar")
-        ATHANOR = 35835, _("Athanor")
-        TATARA = 35836, _("Tatara")
-        RAITARU = 35825, _("Raitaru")
-        AZBEL = 35826, _("Azbel")
-        SOTIYO = 35827, _("Sotiyo")
-        ANSIBLEX = 35841, _("Ansiblex Jump Bridge")
-        PHAROLUX = 35840, _("Pharolux Cyno Beacon")
-        TENEBREX = 37534, _("Tenebrex Cyno Jammer")
-        SKYHOOK = 4736, _("Orbital Skyhook")
-        METENOX = 81826, _("Metenox Moon Drill")
-        SHUB = 32458, _("Sovereignty Hub")
-
     date = models.DateTimeField(
         db_index=True,
         null=True,
@@ -665,6 +646,15 @@ class Timer(models.Model):
         )
 
 
+class StructureTimersEveType(EveType):
+    """Extends EveType to add a manager for structure lists."""
+
+    class Meta:
+        proxy = True
+
+    objects = StructureListManager()
+
+
 class NotificationRule(models.Model):
     """A notification rule."""
 
@@ -865,18 +855,18 @@ class NotificationRule(models.Model):
         blank=True,
         help_text="Space Type must NOT be one of the selected",
     )
-    require_structure_types = MultiSelectField(
-        choices=Timer.StructureType.choices,
-        max_length=get_max_length(Timer.StructureType.choices, None),
+    require_structure_types = models.ManyToManyField(
+        EveType,
         blank=True,
+        related_name="+",
         help_text=(
             "Structure type must be one of the selected or leave blank to match any."
         ),
     )
-    exclude_structure_types = MultiSelectField(
-        choices=Timer.StructureType.choices,
-        max_length=get_max_length(Timer.StructureType.choices, None),
+    exclude_structure_types = models.ManyToManyField(
+        EveType,
         blank=True,
+        related_name="notification_rule_exclude_structure_types",
         help_text="Structure type must NOT be one of the selected",
     )
 
@@ -980,14 +970,11 @@ class NotificationRule(models.Model):
         if is_matching and self.exclude_space_types:
             is_matching = timer.space_type not in self.exclude_space_types
 
-        if is_matching and self.require_structure_types:
-            is_matching = str(timer.structure_type.id) in self.require_structure_types
+        if is_matching and self.require_structure_types.exists():
+            is_matching = timer.structure_type in self.require_structure_types.all()
 
-        if is_matching and self.exclude_structure_types:
-            is_matching = (
-                str(timer.structure_type.id) not in self.exclude_structure_types
-            )
-
+        if is_matching and self.exclude_structure_types.exists():
+            is_matching = timer.structure_type not in self.exclude_structure_types.all()
         return is_matching
 
 
