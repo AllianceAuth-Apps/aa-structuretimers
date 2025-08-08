@@ -354,24 +354,30 @@ class Timer(models.Model):
             raise NotImplementedError(
                 f"System with unknown space type: {eve_solar_system}"
             )
-            
+
     class StructureType(models.TextChoices):
         """A structure type."""
 
-        ASTRAHUS = "AST", _("Astrahus")
-        FORTIZAR = "FOR", _("Fortizar")
-        KEEPSTAR = "KSP", _("Keepstar")
-        ATHANOR = "ATH", _("Athanor")
-        TATARA = "TAT", _("Tatara")
-        RAITARU = "RAT", _("Raitaru")
-        AZBEL = "AZB", _("Azbel")
-        SOTIYO = "SOT", _("Sotiyo")
-        ANSIBLEX = "ANS", _("Ansiblex Jump Bridge")
-        PHAROLUX = "PHA", _("Pharolux Cyno Beacon")
-        TENEBREX = "TEN", _("Tenebrex Cyno Jammer")
-        SKYHOOK = "SKY", _("Orbital Skyhook")
-        METANOX = "MET", _("Metanox Moon Drill")
-        SHUB = "SHU", _("Sovereignity Hub")
+        ASTRAHUS = 35832, _("Astrahus")
+        FORTIZAR = 35833, _("Fortizar")
+        MOREAU_FORTIZAR = 47512, _("'Moreau' Fortizar")
+        DRACCOUS_FORTIZAR = 47513, _("'Draccous' Fortizar")
+        HORIZON_FORTIZAR = 47514, _("'Horizon' Fortizar")
+        MARGINIS_FORTIZAR = 47515, _("'Marginis' Fortizar")
+        PROMETHEUS_FORTIZAR = 47516, _("'Prometheus' Fortizar")
+        KEEPSTAR = 35834, _("Keepstar")
+        PALATINE_KEEPSTAR = 40340, _("Upwell Palatine Keepstar")
+        ATHANOR = 35835, _("Athanor")
+        TATARA = 35836, _("Tatara")
+        RAITARU = 35825, _("Raitaru")
+        AZBEL = 35826, _("Azbel")
+        SOTIYO = 35827, _("Sotiyo")
+        ANSIBLEX = 35841, _("Ansiblex Jump Bridge")
+        PHAROLUX = 35840, _("Pharolux Cyno Beacon")
+        TENEBREX = 37534, _("Tenebrex Cyno Jammer")
+        SKYHOOK = 4736, _("Orbital Skyhook")
+        METENOX = 81826, _("Metenox Moon Drill")
+        SHUB = 32458, _("Sovereignty Hub")
 
     date = models.DateTimeField(
         db_index=True,
@@ -976,12 +982,12 @@ class NotificationRule(models.Model):
 
         if is_matching and self.require_structure_types:
             is_matching = (
-                timer.structure_type.name in self.require_structure_types
+                timer.structure_type.id in self.require_structure_types
             )
         
         if is_matching and self.exclude_structure_types:
             is_matching = (
-                timer.structure_type.name not in self.exclude_structure_types
+                timer.structure_type.id not in self.exclude_structure_types
             )
 
         return is_matching
