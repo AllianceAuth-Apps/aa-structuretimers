@@ -36,6 +36,9 @@ NotificationRuleManager = NotificationRuleManagerBase.from_queryset(
 
 class StructureListManager(models.Manager):
     def get_queryset(self):
+        """Return new queryset based on current queryset,
+        which only contains structure types.
+        """
         qs = super().get_queryset()
         qs = (
             qs.filter(
