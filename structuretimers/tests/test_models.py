@@ -1010,16 +1010,16 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_should_match_include_structure_types(self):
         # given
-        timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
+        timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
         rule = create_notification_rule(
-            require_structure_types=[Timer.StructureType.KEEPSTAR]
+            require_structure_types=[Timer.StructureType.RAITARU]
         )
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_include_structure_types(self):
         # given
-        timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
+        timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
         rule = create_notification_rule(
             require_structure_types=[Timer.StructureType.FORTIZAR]
         )
@@ -1028,7 +1028,7 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_should_match_exclude_structure_types(self):
         # given
-        timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
+        timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
         rule = create_notification_rule(
             exclude_structure_types=[Timer.StructureType.FORTIZAR]
         )
@@ -1037,9 +1037,9 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_should_not_match_exclude_structure_types(self):
         # given
-        timer = create_timer(structure_type=EveType.objects.get(name="Keepstar"))
+        timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
         rule = create_notification_rule(
-            exclude_structure_types=[Timer.StructureType.KEEPSTAR]
+            exclude_structure_types=[Timer.StructureType.RAITARU]
         )
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
