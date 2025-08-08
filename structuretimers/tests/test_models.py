@@ -1011,36 +1011,32 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
     def test_should_match_include_structure_types(self):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
-        rule = create_notification_rule(
-            require_structure_types=[EveType.objects.get(name="Raitaru")]
-        )
+        rule = create_notification_rule()
+        rule.require_structure_types.add(EveType.objects.get(name="Raitaru"))
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_include_structure_types(self):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
-        rule = create_notification_rule(
-            require_structure_types=[EveType.objects.get(name="Fortizar")]
-        )
+        rule = create_notification_rule()
+        rule.require_structure_types.add(EveType.objects.get(name="Fortizar"))
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
     def test_should_match_exclude_structure_types(self):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
-        rule = create_notification_rule(
-            exclude_structure_types=[EveType.objects.get(name="Fortizar")]
-        )
+        rule = create_notification_rule()
+        rule.exclude_structure_types.add(EveType.objects.get(name="Fortizar"))
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_exclude_structure_types(self):
         # given
         timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
-        rule = create_notification_rule(
-            exclude_structure_types=[EveType.objects.get(name="Raitaru")]
-        )
+        rule = create_notification_rule()
+        rule.exclude_structure_types.add(EveType.objects.get(name="Raitaru"))
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
