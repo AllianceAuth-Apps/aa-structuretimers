@@ -12,7 +12,6 @@ authors = [{ name = "Erik Kalkoken", email = "kalkoken87@gmail.com" }]
 classifiers = [
     "Environment :: Web Environment",
     "Framework :: Django",
-    "Framework :: Django :: 4.0",
     "Framework :: Django :: 4.2",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
@@ -22,17 +21,19 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
 ]
 dependencies = [
     "allianceauth-app-utils>=1.17.1",
-    "allianceauth>=3",
+    "allianceauth>=4,<5",
     "dhooks_lite>=1.0.0",
     "django-eveuniverse>=0.16",
     "django-multiselectfield",
     "redis-simple-mq>=0.4",
     "requests",
+    "puremagic",
 ]
 
 [project.urls]
@@ -71,13 +72,14 @@ max-line-length = 120
 
 [tool.pylint.'MESSAGES CONTROL']
 disable = [
-    # "too-many-instance-attributes",
-    "too-few-public-methods",
-    "too-many-positional-arguments",
-    "imported-auth-user",
     "cyclic-import",
-    # "fixme",
     "import-outside-toplevel",
-    # "redefined-builtin",
+    "imported-auth-user",
     "no-member",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "fixme",
+    # "redefined-builtin",
+    # "too-many-instance-attributes",
 ]

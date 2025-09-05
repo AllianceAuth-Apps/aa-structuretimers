@@ -1,17 +1,23 @@
-.table_timers thead th, #tbl_preliminary thead th {
+.table_timers thead th,
+#tbl_preliminary thead th {
     text-align: center
 }
 
-.table_timers tbody td, #tbl_preliminary tbody td {
+.table_timers tbody td,
+#tbl_preliminary tbody td {
     text-align: center;
     word-wrap: break-word;
 }
 
-.table_timers tbody td:nth-child(1), .table_timers tbody td:nth-child(2), .table_timers tbody td:nth-child(8) {
+.table_timers tbody td:nth-child(1),
+.table_timers tbody td:nth-child(2),
+.table_timers tbody td:nth-child(4),
+.table_timers tbody td:nth-child(8) {
     white-space: nowrap;
 }
 
-#tbl_preliminary tbody td:nth-child(6), #tbl_preliminary tbody td:nth-child(7) {
+#tbl_preliminary tbody td:nth-child(6),
+#tbl_preliminary tbody td:nth-child(7) {
     white-space: nowrap;
 }
 

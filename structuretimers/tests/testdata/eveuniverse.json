@@ -1,6 +1,11 @@
 {
     "EveCategory": [
         {
+            "id": 22,
+            "name": "Deployable",
+            "published": true
+        },
+        {
             "id": 40,
             "name": "Sovereignty Structures",
             "published": true
@@ -171,6 +176,12 @@
             "eve_category_id": 65,
             "id": 4744,
             "name": "Upwell Moon Drill",
+            "published": true
+        },
+        {
+            "eve_category_id": 22,
+            "id": 4810,
+            "name": "Mercenary Den",
             "published": true
         }
     ],
@@ -1040,6 +1051,40 @@
             "published": true,
             "radius": 25000.0,
             "volume": 6000.0
+        },
+        {
+            "capacity": 3000.0,
+            "description": "The Deathless Circle has developed an open-source facility known throughout the cluster as a \u201cMercenary Den.\u201d Allegedly designed as a hub for Upwell clones to rest and relax, they have quickly become congregating points for mercenaries looking for work and clones seeking to escape it. This facility provides an ideal environment for enjoying alcoholic drinks, watching the latest SCOPE broadcasts, and engaging in impromptu combat training.\r\n\r\nThe Deathless has released a statement that any Upwell legal teams bothered about misuse of the Transneural Echo Burn Scanner \u201cbooths\u201d included with the structure should \"kindly leave and pass away peacefully.\"\r\n\r\nPlease note that at this time, Mercenary Dens can only sustain themselves when linked to a nearby temperate planet Skyhook.",
+            "enabled_sections": 0,
+            "eve_graphic_id": null,
+            "eve_group_id": 4810,
+            "eve_market_group_id": null,
+            "icon_id": null,
+            "id": 85230,
+            "mass": 10000.0,
+            "name": "Mercenary Den",
+            "packaged_volume": 50.0,
+            "portion_size": 1,
+            "published": true,
+            "radius": 2500.0,
+            "volume": 50.0
+        },
+        {
+            "capacity": 3000.0,
+            "description": "In anticipation of aggression from capsuleers and other hostile agents targeting Mercenary Dens without provocation, The Deathless Circle has released an upgraded variant of the base structure, featuring enhanced shielding, armor, and hull strength.\r\n\r\nAdditionally, small Deathless Circle pilot fleets patrol near Seneschals, attacking anyone who initiates aggressive actions against the structure.",
+            "enabled_sections": 0,
+            "eve_graphic_id": null,
+            "eve_group_id": 4810,
+            "eve_market_group_id": null,
+            "icon_id": null,
+            "id": 85980,
+            "mass": 10000.0,
+            "name": "'Seneschal' Mercenary Den",
+            "packaged_volume": 50.0,
+            "portion_size": 1,
+            "published": true,
+            "radius": 2500.0,
+            "volume": 50.0
         }
     ]
 }

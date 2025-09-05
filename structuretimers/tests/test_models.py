@@ -96,7 +96,7 @@ class TestTimer(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_label_type_for_timer_type(self):
         timer = Timer(date=now())
-        self.assertEqual(timer.label_type_for_timer_type(), "default")
+        self.assertEqual(timer.label_type_for_timer_type(), "secondary")
 
         timer.timer_type = Timer.Type.ARMOR
         self.assertEqual(timer.label_type_for_timer_type(), "danger")
@@ -106,7 +106,7 @@ class TestTimer(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_label_type_for_objective(self):
         timer = Timer(date=now())
-        self.assertEqual(timer.label_type_for_objective(), "default")
+        self.assertEqual(timer.label_type_for_objective(), "secondary")
 
         timer.objective = Timer.Objective.HOSTILE
         self.assertEqual(timer.label_type_for_objective(), "danger")
@@ -1171,28 +1171,6 @@ class TestNotificationRuleSave(LoadTestDataMixin, NoSocketsTestCase):
         rule.save()
 
         self.assertFalse(ScheduledNotification.objects.filter(pk=obj.pk).exists())
-
-
-class TestNotificationRuleMultiselectDisplay(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.choices = [
-            (1, "alpha"),
-            (2, "bravo"),
-        ]
-
-    def test_returns_value_if_found(self):
-        self.assertEqual(
-            NotificationRule.get_multiselect_display(1, self.choices), "alpha"
-        )
-        self.assertEqual(
-            NotificationRule.get_multiselect_display(2, self.choices), "bravo"
-        )
-
-    def test_raises_exception_if_not_found(self):
-        with self.assertRaises(ValueError):
-            NotificationRule.get_multiselect_display(3, self.choices)
 
 
 @patch("structuretimers.tasks.retry_task_if_esi_is_down", lambda self: None)

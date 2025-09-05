@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+## [2.0.0] - 2025-04-15
+
+### Update notes
+
+This release requires Alliance Auth 4.0 or greater.
+
+### Changed
+
+- BREAKING: Support dropped for AA3
+- Templates migrated to AA4 / Bootstrap 5
+- Added support for Python 3.12
+
+## [1.10.0] - 2025-01-13
+
+### Upgrade notes
+
+Please re-run the data loading command to add the new mercenary dens. This will also add the pirate FOBs:
+
+```sh
+python manage.py structuretimers_load_eve
+```
+
+### Added
+
+- Added support for mercenary dens (#36)
+
+### Fixed
+
+- Pirate FOB not fetch via load eve command
+
 ## [1.9.0] - 2024-11-04
 
 ### Added
@@ -244,7 +274,7 @@ Thanks @colcrunch for your contribution!
 
 ## 1.0.1 - 2020-09-16
 
-**Updating notes**
+### Updating notes
 
 After completing the normal update steps please also rerun the following management command to get the new types:
 
@@ -266,7 +296,7 @@ Thank you Exiom for the contribution.
 
 ## 1.0.0b6 - 2020-09-10
 
-**Updating notes**
+### Updating notes
 
 After completing the normal update steps please also rerun the following management command to get the new types:
 

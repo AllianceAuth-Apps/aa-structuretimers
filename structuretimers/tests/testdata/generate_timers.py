@@ -1,6 +1,5 @@
 # flake8: noqa
-"""scripts generates large amount of timers for load testing
-"""
+"""scripts generates large amount of timers for load testing"""
 
 import os
 import sys

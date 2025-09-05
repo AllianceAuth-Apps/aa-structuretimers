@@ -17,6 +17,7 @@ class CreateEveUniverseTestData(TestCase):
             ModelSpec(
                 "EveGroup",
                 ids=[
+                    EveGroupId.MERCENARY_DEN.value,
                     EveGroupId.PIRATE_FORWARD_OPERATING_BASE.value,
                     EveGroupId.SKYHOOK.value,
                 ],

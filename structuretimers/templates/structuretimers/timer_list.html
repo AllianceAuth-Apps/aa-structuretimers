@@ -3,46 +3,49 @@
 {% load i18n %}
 {% load evelinks %}
 
-{% block details %}
-    <div class="col-lg-12 text-center">
-        <b>{% translate "Current Eve Time:" %}</b>&nbsp;<span id="current-time">{{ current_time }}</span>
-    </div>
-
-    <span class="pull-right">
-        {% if perms.structuretimers.create_timer %}
-            <a
-                href="{% url 'structuretimers:add' %}"
-                class="btn btn-success btn-tabs"
-                title="{% translate 'Add new timer' %}">
-                {% translate "Add Timer" %}
-            </a>
-        {% endif %}
-    </span>
-
+{% block content %}
     <!-- Nav tabs -->
     <ul class="nav nav-tabs" role="tablist">
-        <li role="presentation"><a href="#preliminary" aria-controls="preliminary" role="tab" data-toggle="tab">{% translate "Preliminary" %}</a></li>
-        <li role="presentation"><a href="#current" aria-controls="current" role="tab" data-toggle="tab">{% translate "Current" %}</a></li>
-        <li role="presentation"><a href="#past" aria-controls="past" role="tab" data-toggle="tab">{% translate "Past" %}</a></li>
-        <li class="dropdown pull-right">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                {% translate "Staging:" %} {{ selected_staging_system|default:"?" }} <span class="caret"></span>
-            </a>
-            <ul class="dropdown-menu">
-                {% for staging_system in stageing_systems %}
-                    <li><a href="{% url 'structuretimers:timer_list' %}?staging={{ staging_system.eve_solar_system.name }}">
-                        {{ staging_system }} ({{ staging_system.eve_solar_system.eve_constellation.eve_region }})
-                        {% if staging_system.is_main %} {% translate "[MAIN]" %} {% endif %}
-                    </a></li>
-                {% empty %}
-                    <li class="disabled"><a href="#">{% translate "No staging system configured." %}</a></li>
-                {% endfor %}
-            </ul>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-target="#preliminary" aria-controls="preliminary" role="tab" data-bs-toggle="tab">
+                {% translate "Preliminary" %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-target="#current" aria-controls="current" role="tab" data-bs-toggle="tab">
+                {% translate "Current" %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-target="#past" aria-controls="past" role="tab" data-bs-toggle="tab">
+                {% translate "Past" %}
+            </button>
+        </li>
+        <li role="presentation" class="nav-item ms-auto">
+            <div class="dropdown">
+                <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    {% translate "Staging:" %} {{ selected_staging_system|default:"?" }}
+                </button>
+                <ul class="dropdown-menu">
+                    {% for staging_system in stageing_systems %}
+                        <li>
+                            <a class="dropdown-item" href="{% url 'structuretimers:timer_list' %}?staging={{ staging_system.eve_solar_system.name }}">
+                                {{ staging_system }} ({{ staging_system.eve_solar_system.eve_constellation.eve_region }})
+                                {% if staging_system.is_main %} {% translate "[MAIN]" %} {% endif %}
+                            </a>
+                        </li>
+                    {% empty %}
+                        <li class="disabled">
+                            <a class="dropdown-item" href="#">{% translate "No staging system configured." %}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </li>
     </ul>
 
-    <div class="panel panel-default panel-tabs">
-        <div class="panel-body">
+    <div class="card card-default">
+        <div class="card-body">
             <div class="tab-content">
                 <!-- targets tab -->
                 <div role="tabpanel" class="tab-pane" id="preliminary">
@@ -77,10 +80,8 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
                     <h4 class="modal-title" id="gridSystemModalLabel">{% translate "Timer details" %}</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="modal_div_spinner">
@@ -94,7 +95,7 @@
                     <div id="modalLoadError"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">{% translate "Close" %}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Close" %}</button>
                 </div>
             </div>
         </div>
@@ -121,17 +122,17 @@
     >
     </div>
 
-{% endblock details %}
+{% endblock content %}
 
 {% block extra_css %}
-    {% include 'bundles/datatables-css.html' %}
+    {% include 'bundles/datatables-css-bs5.html' %}
     <link rel="stylesheet" href="{% static 'structuretimers/css/global.css' %}" type="text/css" media="screen">
     <link rel="stylesheet" href="{% static 'structuretimers/css/timer_list.css' %}" type="text/css" media="screen">
 {% endblock extra_css%}
 
 {% block extra_javascript %}
     {% include 'bundles/moment-js.html' with locale=True %}
-    {% include 'bundles/datatables-js.html' %}
+    {% include 'bundles/datatables-js-bs5.html' %}
     {% include 'bundles/filterdropdown-js.html' %}
     <script type="application/javascript" src="{% static 'structuretimers/js/timer_list.js' %}"></script>
 {% endblock extra_javascript %}
