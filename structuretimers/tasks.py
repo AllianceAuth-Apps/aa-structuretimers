@@ -12,7 +12,7 @@ from django.utils.timezone import now
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from allianceauth.services.tasks import QueueOnce
-from app_utils.esi import retry_task_if_esi_is_down
+from app_utils.esi import retry_task_on_esi_error_and_offline
 from app_utils.logging import LoggerAddTag
 
 from . import __title__
@@ -342,9 +342,11 @@ def calc_timer_distances_for_staging_system(
     self, timer_pk: int, staging_system_pk: int, force_update: bool = False
 ) -> None:
     """Calc distances for a timer from a staging system."""
-    retry_task_if_esi_is_down(self)
     timer = Timer.objects.get(pk=timer_pk)
     staging_system = StagingSystem.objects.get(pk=staging_system_pk)
-    DistancesFromStaging.objects.calc_timer_for_staging_system(
-        timer=timer, staging_system=staging_system, force_update=force_update
-    )
+    with retry_task_on_esi_error_and_offline(
+        self, f"distance from staging {timer_pk} {staging_system_pk}"
+    ):
+        DistancesFromStaging.objects.calc_timer_for_staging_system(
+            timer=timer, staging_system=staging_system, force_update=force_update
+        )
