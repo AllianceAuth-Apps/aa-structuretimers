@@ -1173,7 +1173,6 @@ class TestNotificationRuleSave(LoadTestDataMixin, NoSocketsTestCase):
         self.assertFalse(ScheduledNotification.objects.filter(pk=obj.pk).exists())
 
 
-@patch("structuretimers.tasks.retry_task_if_esi_is_down", lambda self: None)
 @patch(MODULE_PATH + ".EveSolarSystem.distance_to", lambda *args, **kwargs: 4.257e16)
 @patch(MODULE_PATH + ".EveSolarSystem.jumps_to", lambda *args, **kwargs: 3)
 @patch(MODULE_PATH + "._task_calc_staging_system", wraps=_task_calc_staging_system)
