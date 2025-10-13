@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+## [2.1.0] - 2025-10-12
+
+### Changed
+
+- Updated tasks to work with changed status endpoint. See [CHANGELOG](https://gitlab.com/ErikKalkoken/allianceauth-app-utils/-/blob/master/CHANGELOG.md#1270---2025-10-12) of app_utils for more information.
+
 ## [2.0.0] - 2025-04-15
 
 ### Update notes
