@@ -1,5 +1,5 @@
 {% extends "structuretimers/base.html" %}
-{% load bootstrap %}
+{% load django_bootstrap5 %}
 {% load static %}
 {% load i18n %}
 
@@ -16,7 +16,7 @@
                     {% endif %}
                     <form id="add-timer-form" class="form-signin" role="form" action="" method="POST">
                         {% csrf_token %}
-                        {{ form|bootstrap }}
+                        {% bootstrap_form form %}
                         <br/>
                         <p>
                             <i class="fas fa-asterisk"></i> {% translate "required fields" %}
@@ -37,16 +37,16 @@
         data-select2SolarSystemsUrl="{% url 'structuretimers:select2_solar_systems' %}"
         data-select2StructureTypesUrl="{% url 'structuretimers:select2_structure_types' %}">
     </div>
+
     {{ NIGHT_MODE|json_script:"night-mode-data" }}
     {{ LANGUAGE_CODE|json_script:"language-code-data" }}
-
 {% endblock content %}
 
 {% block extra_css %}
-    <link href="{% static 'structuretimers/vendor/select2-4.1.0-beta.1/select2.min.css' %}" rel="stylesheet" />
-    <link href="{% static 'structuretimers/vendor/select2-bootstrap-theme-0.1.0-beta.10/select2-bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'structuretimers/vendor/select2-4.1.0-beta.1/select2.min.css' %}" rel="stylesheet">
+    <link href="{% static 'structuretimers/vendor/select2-bootstrap-theme-0.1.0-beta.10/select2-bootstrap.min.css' %}" rel="stylesheet">
     {% include "bundles/jquery-datetimepicker-css.html" %}
-    <link href="{% static 'structuretimers/css/timer_edit.css' %}" rel="stylesheet" />
+    <link href="{% static 'structuretimers/css/timer_edit.css' %}" rel="stylesheet">
 {% endblock extra_css %}
 
 {% block extra_javascript %}
