@@ -64,6 +64,15 @@ def _task_schedule_notifications_for_timer():
     return schedule_notifications_for_timer
 
 
+class ApiKey(models.Model):
+    """User to discord Api Key"""
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="scheduled_notifications"
+    )
+    secret = models.CharField(max_length=255, unique=True)
+
+
 class General(models.Model):
     """Meta model for app permissions"""
 
