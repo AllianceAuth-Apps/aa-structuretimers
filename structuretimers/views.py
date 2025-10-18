@@ -65,7 +65,7 @@ def bootstrap5_label_html(text: str, label: str = "secondary") -> str:
     return format_html('<span class="badge text-bg-{}">{}</span>', label, text)
 
 
-def parseTimeString(timestring):
+def parse_time_string(timestring):
     if re.match(r"\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}", timestring):
         parts = re.split("\\.| |:", timestring)
         parts = [int(n) for n in parts]
@@ -136,7 +136,7 @@ def api(request):
             return JsonResponse({"result": "invalid json"}, status=400)
         system = EveSolarSystem.objects.filter(name=data["system"])[0]
         structure_type = EveType.objects.filter(id=data["structure"])[0]
-        dt = parseTimeString(data["timer"])
+        dt = parse_time_string(data["timer"])
         new_timer = Timer(
             date=dt,
             eve_solar_system=system,
