@@ -37,7 +37,6 @@ from django.views.generic import (
 from eveuniverse.models import EveSolarSystem, EveType
 
 from allianceauth.eveonline.evelinks import dotlan
-from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
 from app_utils.logging import LoggerAddTag
 from app_utils.views import (
@@ -84,18 +83,9 @@ def api(request):
         if character is None:
             logger.error("structuretimer api user has no main character")
             raise PermissionDenied()
-        try:
-            alliance = character.alliance
-        except EveAllianceInfo.DoesNotExist:
-            alliance = EveAllianceInfo.objects.create_alliance(character.alliance_id)
-        try:
-            corporation = character.corporation
-        except EveCorporationInfo.DoesNotExist:
-            corporation = EveCorporationInfo.objects.create_corporation(
-                character.corporation_id
-            )
-        body = request.body
-        if len(body) < 10:
+        alliance = character.alliance
+        corporation = character.corporation
+        if len(request.body) < 10:
             return JsonResponse({"result": "missing data"}, status=404)
         try:
             data = json.loads(request.body)
