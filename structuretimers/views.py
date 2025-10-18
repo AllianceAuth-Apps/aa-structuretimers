@@ -173,7 +173,7 @@ def api(request):
         if "owner" in data and data["owner"]:
             new_timer.owner_name = data["owner"]
         if "planet" in data and data["planet"]:
-            new_timer.location_details = f"Planet {data["planet"]}"
+            new_timer.location_details = f"Planet {data['planet']}"
         new_timer.save()
         returndata = {
             "username": apikey.user.username,
