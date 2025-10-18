@@ -65,17 +65,59 @@ def bootstrap5_label_html(text: str, label: str = "secondary") -> str:
     return format_html('<span class="badge text-bg-{}">{}</span>', label, text)
 
 
+def parseTimeString(timestring):
+    if re.match(r"\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}", timestring):
+        parts = re.split("\\.| |:", timestring)
+        parts = [int(n) for n in parts]
+        print(parts)
+        dt = datetime.datetime(
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+            parts[4],
+            parts[5],
+            tzinfo=utc,
+        )
+    elif re.match(r"\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}", timestring):
+        parts = re.split("\\.| |:", timestring)
+        parts = [int(n) for n in parts]
+        print(parts)
+        dt = datetime.datetime(
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+            parts[4],
+            0,
+            tzinfo=utc,
+        )
+    elif re.match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}", timestring):
+        parts = re.split("\\.|-| |:", timestring)
+        parts = [int(n) for n in parts]
+        print(parts)
+        dt = datetime.datetime(
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+            parts[4],
+            0,
+            tzinfo=utc,
+        )
+    else:
+        return False
+    return dt
+
+
 @csrf_exempt
 def api(request):
     if "munsbot-request-token" in request.headers:
-        print("ayo we know this guy")
         apikey = get_object_or_404(
             ApiKey, secret=request.headers["munsbot-request-token"]
         )
         user = apikey.user
-        if user.has_perm("structuretimers.create_timer"):
-            print(f"{user} can create timers")
-        else:
+        if not user.has_perm("structuretimers.create_timer"):
             print(f"{user} can not create timers")
             raise PermissionDenied()
 
@@ -94,59 +136,7 @@ def api(request):
             return JsonResponse({"result": "invalid json"}, status=400)
         system = EveSolarSystem.objects.filter(name=data["system"])[0]
         structure_type = EveType.objects.filter(id=data["structure"])[0]
-        timestring = data["timer"]
-        if re.match(r"\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}", timestring):
-            parts = re.split("\\.| |:", timestring)
-            parts = [int(n) for n in parts]
-            print(parts)
-            dt = datetime.datetime(
-                parts[0],
-                parts[1],
-                parts[2],
-                parts[3],
-                parts[4],
-                parts[5],
-                tzinfo=utc,
-            )
-        elif re.match(r"\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}", timestring):
-            parts = re.split("\\.| |:", timestring)
-            parts = [int(n) for n in parts]
-            print(parts)
-            dt = datetime.datetime(
-                parts[0],
-                parts[1],
-                parts[2],
-                parts[3],
-                parts[4],
-                0,
-                tzinfo=utc,
-            )
-        elif re.match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}", timestring):
-            parts = re.split("\\.|-| |:", timestring)
-            parts = [int(n) for n in parts]
-            print(parts)
-            dt = datetime.datetime(
-                parts[0],
-                parts[1],
-                parts[2],
-                parts[3],
-                parts[4],
-                0,
-                tzinfo=utc,
-            )
-        else:
-            print("no matches, bye")
-            return False
-        print(
-            {
-                "date": dt,
-                "eve_solar_system": system,
-                "structure_type": structure_type,
-                "structure_name": data["structure_name"],
-                "timer_type": data["timertype"],
-                "objective": data["objective"],
-            }
-        )
+        dt = parseTimeString(data["timer"])
         new_timer = Timer(
             date=dt,
             eve_solar_system=system,
