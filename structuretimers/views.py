@@ -174,11 +174,18 @@ def api(request):
                 print(f"{user} can not create timers")
                 raise PermissionDenied()
             hoursPassed = MAX_HOURS_PASSED
+            hoursUntil = 24
             if "hours-passed" in request.headers:
                 hoursPassed = int(request.headers["hours-passed"])
+            if "hours-until" in request.headers:
+                hoursUntil = int(request.headers["hours-until"])
             since = datetime.datetime.now(utc) - datetime.timedelta(hours=hoursPassed)
+            until = datetime.datetime.now(utc) + datetime.timedelta(hours=hoursUntil)
             print(f"selecting timers since '{since}'")
-            timers = Timer.objects.filter(date__gt=since).order_by("date")
+            timers = Timer.objects.filter(date__gt=since)
+            if hoursUntil > 0:
+                timers = timers.filter(date__lt=until)
+            timers = timers.order_by("date")
             returndata["timers"] = []
             for t in timers:
                 returndata["timers"].append(
@@ -194,6 +201,7 @@ def api(request):
                         "owner": t.owner_name,
                         "type": t.timer_type,
                         "system": t.eve_solar_system.name,
+                        "important": t.is_important,
                     }
                 )
 
