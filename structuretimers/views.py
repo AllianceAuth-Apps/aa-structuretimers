@@ -116,57 +116,87 @@ def api(request):
         apikey = get_object_or_404(
             ApiKey, secret=request.headers["munsbot-request-token"]
         )
+        returndata = {}
         user = apikey.user
-        if not user.has_perm("structuretimers.create_timer"):
-            print(f"{user} can not create timers")
-            raise PermissionDenied()
+        if request.method == "POST":
+            if not user.has_perm("structuretimers.create_timer"):
+                print(f"{user} can not create timers")
+                raise PermissionDenied()
 
-        character = user.profile.main_character
-        if character is None:
-            logger.error("structuretimer api user has no main character")
-            raise PermissionDenied()
-        alliance = character.alliance
-        corporation = character.corporation
-        if len(request.body) < 10:
-            return JsonResponse({"result": "missing data"}, status=404)
-        try:
-            data = json.loads(request.body)
-        except json.decoder.JSONDecodeError:
-            logger.info("recieved invalid json")
-            return JsonResponse({"result": "invalid json"}, status=400)
-        system = EveSolarSystem.objects.filter(name=data["system"])[0]
-        structure_type = EveType.objects.filter(id=data["structure"])[0]
-        dt = parse_time_string(data["timer"])
-        new_timer = Timer(
-            date=dt,
-            eve_solar_system=system,
-            structure_type=structure_type,
-            structure_name=data["structure_name"],
-            timer_type=data["timertype"],
-            objective=data["objective"],
-            details_notes=data["msg"],
-            eve_character=character,
-            eve_corporation=corporation,
-            eve_alliance=alliance,
-            user=user,
-        )
-        if "owner" in data and data["owner"]:
-            new_timer.owner_name = data["owner"]
-        if "planet" in data and data["planet"]:
-            new_timer.location_details = f"Planet {data['planet']}"
-        new_timer.save()
-        returndata = {
-            "username": apikey.user.username,
-            "system": {"id": system.id, "name": system.name},
-            "structure": {
-                "id": structure_type.id,
-                "type": structure_type.name,
-                "name": data["structure_name"],
-            },
-            "url": f"{request.build_absolute_uri(new_timer.get_absolute_url())}edit/{new_timer.pk}",
-        }
-        logger.info("created new timer, returning confirm")
-        logger.info(returndata)
+            character = user.profile.main_character
+            if character is None:
+                logger.error("structuretimer api user has no main character")
+                raise PermissionDenied()
+            alliance = character.alliance
+            corporation = character.corporation
+            if len(request.body) < 10:
+                return JsonResponse({"result": "missing data"}, status=404)
+            try:
+                data = json.loads(request.body)
+            except json.decoder.JSONDecodeError:
+                logger.info("recieved invalid json")
+                return JsonResponse({"result": "invalid json"}, status=400)
+            system = EveSolarSystem.objects.filter(name=data["system"])[0]
+            structure_type = EveType.objects.filter(id=data["structure"])[0]
+            dt = parse_time_string(data["timer"])
+            new_timer = Timer(
+                date=dt,
+                eve_solar_system=system,
+                structure_type=structure_type,
+                structure_name=data["structure_name"],
+                timer_type=data["timertype"],
+                objective=data["objective"],
+                details_notes=data["msg"],
+                eve_character=character,
+                eve_corporation=corporation,
+                eve_alliance=alliance,
+                user=user,
+            )
+            if "owner" in data and data["owner"]:
+                new_timer.owner_name = data["owner"]
+            if "planet" in data and data["planet"]:
+                new_timer.location_details = f"Planet {data['planet']}"
+            new_timer.save()
+            returndata = {
+                "username": apikey.user.username,
+                "system": {"id": system.id, "name": system.name},
+                "structure": {
+                    "id": structure_type.id,
+                    "type": structure_type.name,
+                    "name": data["structure_name"],
+                },
+                "url": f"{request.build_absolute_uri(new_timer.get_absolute_url())}edit/{new_timer.pk}",
+            }
+            logger.info("created new timer, returning confirm")
+            logger.info(returndata)
+        elif request.method == "GET":
+            if not user.has_perm("structuretimers.basic_access"):
+                print(f"{user} can not create timers")
+                raise PermissionDenied()
+            hoursPassed = MAX_HOURS_PASSED
+            if "hours-passed" in request.headers:
+                hoursPassed = int(request.headers["hours-passed"])
+            since = datetime.datetime.now(utc) - datetime.timedelta(hours=hoursPassed)
+            print(f"selecting timers since '{since}'")
+            timers = Timer.objects.filter(date__gt=since).order_by("date")
+            returndata["timers"] = []
+            for t in timers:
+                returndata["timers"].append(
+                    {
+                        "date": t.date.strftime(DATETIME_FORMAT),
+                        "timestamp": int(t.date.timestamp()),
+                        "structure": {
+                            "id": t.structure_type.id,
+                            "name": t.structure_name,
+                            "type": t.structure_type.name,
+                        },
+                        "stance": t.objective,
+                        "owner": t.owner_name,
+                        "type": t.timer_type,
+                        "system": t.eve_solar_system.name,
+                    }
+                )
+
         return JsonResponse(returndata)
     raise PermissionDenied()
 
