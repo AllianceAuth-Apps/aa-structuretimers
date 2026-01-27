@@ -112,7 +112,7 @@ def parse_time_string(timestring):
 
 @csrf_exempt
 def api(request):
-    if "munsbot-request-token" in request.headers:
+    if "X-Structuretimers-Key" in request.headers:
         apikey = get_object_or_404(
             ApiKey, secret=request.headers["X-Structuretimers-Key"]
         )
