@@ -114,7 +114,7 @@ def parse_time_string(timestring):
 def api(request):
     if "munsbot-request-token" in request.headers:
         apikey = get_object_or_404(
-            ApiKey, secret=request.headers["munsbot-request-token"]
+            ApiKey, secret=request.headers["X-Structuretimers-Key"]
         )
         returndata = {}
         user = apikey.user
