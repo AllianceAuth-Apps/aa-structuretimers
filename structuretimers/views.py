@@ -170,27 +170,27 @@ def api(request):
             logger.info("created new timer, returning confirm")
             logger.info(returndata)
         elif request.method == "GET":
-            returndata = GetTimersForApi(request, user)
+            returndata = get_timers_for_api(request, user)
         return JsonResponse(returndata)
     raise PermissionDenied()
 
 
-def GetTimersForApi(request, user):
+def get_timers_for_api(request, user):
     if not user.has_perm("structuretimers.basic_access"):
         print(f"{user} can not create timers")
         raise PermissionDenied()
     returndata = {}
-    hoursPassed = MAX_HOURS_PASSED
-    hoursUntil = 24
+    hours_passed = MAX_HOURS_PASSED
+    hours_until = 24
     if "hours-passed" in request.headers:
-        hoursPassed = int(request.headers["hours-passed"])
+        hours_passed = int(request.headers["hours-passed"])
     if "hours-until" in request.headers:
-        hoursUntil = int(request.headers["hours-until"])
-    since = datetime.datetime.now(utc) - datetime.timedelta(hours=hoursPassed)
-    until = datetime.datetime.now(utc) + datetime.timedelta(hours=hoursUntil)
+        hours_until = int(request.headers["hours-until"])
+    since = datetime.datetime.now(utc) - datetime.timedelta(hours=hours_passed)
+    until = datetime.datetime.now(utc) + datetime.timedelta(hours=hours_until)
     print(f"selecting timers since '{since}'")
     timers = Timer.objects.filter(date__gt=since)
-    if hoursUntil > 0:
+    if hours_until > 0:
         timers = timers.filter(date__lt=until)
     timers = timers.order_by("date")
     returndata["timers"] = []
