@@ -170,7 +170,7 @@ def api(request):
             logger.info("created new timer, returning confirm")
             logger.info(returndata)
         elif request.method == "GET":
-            GetTimersForApi(request, user)
+            returndata = GetTimersForApi(request, user)
         return JsonResponse(returndata)
     raise PermissionDenied()
 
@@ -211,6 +211,7 @@ def GetTimersForApi(request, user):
                 "important": t.is_important,
             }
         )
+    return returndata
 
 
 class TimerListView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
