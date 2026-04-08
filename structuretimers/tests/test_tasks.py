@@ -470,9 +470,7 @@ class TestHousekeeping(TestCase):
 
 @patch(MODULE_PATH + ".calc_timer_distances_for_staging_system", spec=True)
 class TestTimerDistancesForAllStagingSystems(TestCase):
-    def test_should_run_housekeeping(
-        self, mock_calc_timer_distances_for_staging_system
-    ):
+    def test_should_calc_distances(self, mock_calc_timer_distances_for_staging_system):
         # given
         load_eveuniverse()
         timer = create_timer(
