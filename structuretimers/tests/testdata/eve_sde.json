@@ -1,0 +1,936 @@
+{
+  "ItemCategory": [
+    {
+      "id": 22,
+      "name": "Deployable",
+      "published": true
+    },
+    {
+      "id": 40,
+      "name": "Sovereignty Structures",
+      "published": true
+    },
+    {
+      "id": 46,
+      "name": "Orbitals",
+      "published": true
+    },
+    {
+      "id": 65,
+      "name": "Structure",
+      "published": true
+    }
+  ],
+  "ItemGroup": [
+    {
+      "id": 1003,
+      "name": "Territorial Claim Unit",
+      "published": true,
+      "category_id": 40
+    },
+    {
+      "id": 1012,
+      "name": "Sovereignty Hub",
+      "published": true,
+      "category_id": 40
+    },
+    {
+      "id": 1025,
+      "name": "Orbital Infrastructure",
+      "published": false,
+      "category_id": 46
+    },
+    {
+      "id": 1404,
+      "name": "Engineering Complex",
+      "published": true,
+      "category_id": 65
+    },
+    {
+      "id": 1405,
+      "name": "Laboratory",
+      "published": false,
+      "category_id": 65
+    },
+    {
+      "id": 1406,
+      "name": "Refinery",
+      "published": true,
+      "category_id": 65
+    },
+    {
+      "id": 1407,
+      "name": "Observatory Array",
+      "published": false,
+      "category_id": 65
+    },
+    {
+      "id": 1408,
+      "name": "Upwell Jump Gate",
+      "published": true,
+      "category_id": 65
+    },
+    {
+      "id": 1409,
+      "name": "Administration Hub",
+      "published": false,
+      "category_id": 65
+    },
+    {
+      "id": 1410,
+      "name": "Advertisement Center",
+      "published": false,
+      "category_id": 65
+    },
+    {
+      "id": 1657,
+      "name": "Citadel",
+      "published": true,
+      "category_id": 65
+    },
+    {
+      "id": 1876,
+      "name": "♦ Engineering Complex",
+      "published": false,
+      "category_id": 65
+    },
+    {
+      "id": 1924,
+      "name": "♦ Stronghold",
+      "published": false,
+      "category_id": 65
+    },
+    {
+      "id": 2015,
+      "name": "Upwell Monument",
+      "published": false,
+      "category_id": 65
+    },
+    {
+      "id": 2016,
+      "name": "Upwell Cyno Jammer",
+      "published": true,
+      "category_id": 65
+    },
+    {
+      "id": 2017,
+      "name": "Upwell Cyno Beacon",
+      "published": true,
+      "category_id": 65
+    },
+    {
+      "id": 4644,
+      "name": "Pirate Forward Operating Base",
+      "published": false,
+      "category_id": 65
+    },
+    {
+      "id": 4736,
+      "name": "Skyhook",
+      "published": true,
+      "category_id": 46
+    },
+    {
+      "id": 4744,
+      "name": "Upwell Moon Drill",
+      "published": true,
+      "category_id": 65
+    },
+    {
+      "id": 4810,
+      "name": "Mercenary Den",
+      "published": true,
+      "category_id": 22
+    }
+  ],
+  "Region": [
+    {
+      "id": 10000002,
+      "name": "The Forge",
+      "description": "\"The greater the State becomes, the greater humanity under it flourishes.\""
+    },
+    {
+      "id": 10000014,
+      "name": "Catch",
+      "description": "Catch has long been a strategically important region. During the initial expansion into the rim territories, it linked the Khanid Kingdom, Sansha's Nation and the Angel Cartel to one another, and through its connections to Providence was given considerable status as the \"Southern Gateway\" by the Amarr Empire. Unlike regions such as Pure Blind, however, its importance did not fade with the dawn of the capsuleer era, as its branching links east and west ensured continued relevance. As a consequence it has earned itself a bloody reputation - some say the very stars reverberate with the dying breaths of the countless lost souls."
+    },
+    {
+      "id": 10000064,
+      "name": "Essence",
+      "description": "\"The Federation is not a defined region of space, of planets, of mountains, rivers, or woods. It is a vision.\""
+    },
+    {
+      "id": 10000069,
+      "name": "Black Rise",
+      "description": "For centuries, this volume of space remained inexplicably impenetrable to investigation. It possesses no apparent mass or dimension, but the abrupt disappearance of every expedition into the zone made it an effective bulwark against flanking attacks during the first Gallente-Caldari war, and the subsequent uneasy peace.<br><br>Several decades ago, a coalition of like-minded Caldari megacorps discovered ways to traverse Black Rise safely, and began a secret programme of colonization. The start of the Empyrean War forced them to show their hand, and the region soon became a key front in the conflict between Caldari and Gallente forces.<br><br>Today the region remains somewhat underdeveloped, but rich in raw materials. The poorly-understood phenomena that still manifest can make life awkward, but fluid router networks and jump travel permit unrestricted travel and communications. Of the many early expeditions, though, no trace has yet been found."
+    },
+    {
+      "id": 11000014,
+      "name": "C-R00014",
+      "description": ""
+    }
+  ],
+  "Constellation": [
+    {
+      "id": 20000020,
+      "name": "Kimotoro",
+      "region_id": 10000002,
+      "x": -1.3499640046818544E+17,
+      "y": 64999452632293260.0,
+      "z": 1.0332561731752134E+17
+    },
+    {
+      "id": 20000169,
+      "name": "UX3-N2",
+      "region_id": 10000014,
+      "x": -81442355316866580.0,
+      "y": 8631923480121213.0,
+      "z": -2.142002604277861E+17
+    },
+    {
+      "id": 20000729,
+      "name": "Jeon",
+      "region_id": 10000064,
+      "x": -2.0690763482714282E+17,
+      "y": 48290879069679200.0,
+      "z": 79609990006493180.0
+    },
+    {
+      "id": 20000785,
+      "name": "Ishaga",
+      "region_id": 10000069,
+      "x": -2.2268706803473363E+17,
+      "y": 1.0836835134649451E+17,
+      "z": 1.3602959608230848E+17
+    },
+    {
+      "id": 21000141,
+      "name": "C-C00141",
+      "region_id": 11000014,
+      "x": 7.893287292990094E+18,
+      "y": 18166828545154080.0,
+      "z": -9.290998634713E+18
+    }
+  ],
+  "SolarSystem": [
+    {
+      "id": 30000142,
+      "name": "Jita",
+      "constellation_id": 20000020,
+      "security_status": 0.9459131360054016,
+      "x": -1.29064861735E+17,
+      "y": 60755306910000000.0,
+      "z": 1.1746922706E+17
+    },
+    {
+      "id": 30001161,
+      "name": "HED-GP",
+      "constellation_id": 20000169,
+      "security_status": -0.14632222056388855,
+      "x": -95413697560001200.0,
+      "y": 19654254337720636.0,
+      "z": -2.0691536685399747E+17
+    },
+    {
+      "id": 30004984,
+      "name": "Abune",
+      "constellation_id": 20000729,
+      "security_status": 0.28563404083251953,
+      "x": -2.1126590104115347E+17,
+      "y": 55806528490315120.0,
+      "z": 81416396747037220.0
+    },
+    {
+      "id": 30045339,
+      "name": "Enaluri",
+      "constellation_id": 20000785,
+      "security_status": 0.3277980387210846,
+      "x": -2.2787517331394458E+17,
+      "y": 1.0468838569953179E+17,
+      "z": 1.2027941769265027E+17
+    },
+    {
+      "id": 31001303,
+      "name": "J151645",
+      "constellation_id": 21000141,
+      "security_status": -0.9900000095367432,
+      "x": 7.889821783918055E+18,
+      "y": 8073449579948044.0,
+      "z": -9.287839501992464E+18
+    }
+  ],
+  "ItemType": [
+    {
+      "id": 2233,
+      "name": "Customs Office",
+      "description": "Orbital Customs Offices are the primary points of contact between planetary and interplanetary economies. These facilities, resembling massive hangars in space, provide high-volume, high-frequency cargo transport services between a planet's surface and orbit.\r\n\r\n<i>Excerpt from the Amarr Prime Customs Agency regulations, section 17, subsection 4, paragraph 8:\r\n\r\nThe following items may only be imported or exported with the express prior approval of the Imperial Underscrivener for Commercial Affairs:\r\n\r\nNarcotic substances; handheld firearms; slaver hounds (except as personal property); Mindflood; live insects; ungulates; Class 1 refrigerants and aerosols; forced laborers/personal slaves (or other sapient livestock); animal germ-plasm; biomass of human origin; xenobiotics; walnuts.</i>",
+      "group_id": 1025,
+      "capacity": 35000.0,
+      "mass": 5000000000.0,
+      "radius": 8000.0,
+      "volume": 100000000.0,
+      "packaged_volume": 100000000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 32226,
+      "name": "Defunct Territorial Claim Unit",
+      "description": "Prior to YC126, TCUs used to be the de facto means for alliances to claim null security space as their own. With the introduction of sovereignty hubs by the Upwell Consortium, they have become obsolete and their further deployment has been disabled.",
+      "group_id": 1003,
+      "capacity": 0.0,
+      "mass": 1000000.0,
+      "radius": 1602.0,
+      "volume": 5000.0,
+      "packaged_volume": 5000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 32458,
+      "name": "Sovereignty Hub",
+      "description": "Developed by the Upwell Consortium, the sovereignty hub is the pinnacle of null security space management technology. With its modular upgrade infrastructure and energy capture capabilities, a sovereignty hub generates ample power to establish a claim and begin moving necessary workforce. Additionally, installing <a href=showinfo:81080>orbital skyhooks</a> on nearby planets allows a sovereignty hub to maintain further upgrades that can satisfy a variety of diverse needs.\r\n\r\nTo initiate a claim on a star system, deploy the sovereignty hub near a star and target it with an Entosis Link until your alliance gains full control. Only members of a valid capsuleer alliance can deploy and take control of a sovereignty hub. One hub is the maximum allowed in any star system, and they cannot be deployed in systems under non-capsuleer sovereignty or in wormhole space.",
+      "group_id": 1012,
+      "capacity": 10000.0,
+      "mass": 1000000.0,
+      "radius": 45000.0,
+      "volume": 60000.0,
+      "packaged_volume": 60000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": 26062
+    },
+    {
+      "id": 35825,
+      "name": "Raitaru",
+      "description": "Named after Tyma Raitaru, who pioneered the development of modern day missile technology, the Raitaru Engineering Complex is a medium-sized structure from the Upwell Consortium and is specialized in manufacturing and research operations.\r\n\r\nThe Raitaru is the entry-level Engineering Complex in the Upwell Consortium’s new line of structures, and is able to use Upwell's Standup Service modules, allowing flexibility and customization of its functions. This dedicated industrial structure also provides access to Upwell’s M-Set line of rigs designed to improve productivity and optimization of various aspects of manufacturing and research.\r\n\r\nThe Raitaru provides tethering technology and has docking capabilities for subcapital ships and freighters.",
+      "group_id": 1404,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 45000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35826,
+      "name": "Azbel",
+      "description": "Named after Li Azbel, a Gallente scientist who pioneered the first breakthroughs in faster than light communications, the Azbel Engineering Complex is a large-sized structure from the Upwell Consortium and is specialized in manufacturing and research operations. \r\n\r\nThe Azbel Engineering Complex fits into the industrial major-player spot in the Upwell Consortium’s new line of structures, and is able to use Upwell's Standup Service modules, allowing flexibility and customization of its functions. This dedicated industrial structure also provides access to Upwell’s L-Set line of rigs designed to improve productivity and optimization of various aspects of manufacturing and research.\r\n\r\nDue to its large size this engineering complex can accommodate construction of capital ships using the Standup Capital Shipyard I Service Module.\r\n\r\nThe Azbel provides tethering technology and has docking capabilities for subcapital ships and freighters.",
+      "group_id": 1404,
+      "capacity": 0.0,
+      "mass": 10000000000.0,
+      "radius": 85000.0,
+      "volume": 80000.0,
+      "packaged_volume": 80000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35827,
+      "name": "Sotiyo",
+      "description": "Named after one of the co-creators of the first Caldari warp drive, the Sotiyo-Urbaata Drive, the Sotiyo serves as a mega-scale manufacturing and assembly site for everything from subcapital ships and modules, up to supercapital class hulls. \r\n\r\nThe Sotiyo is the Engineering Complex fit for megacorporations in the Upwell Consortium’s new line of structures, and is able to use Upwell's Standup Service modules, allowing flexibility and customization of its functions. This dedicated industrial structure also provides access to Upwell’s XL-Set line of rigs designed to improve productivity and optimization of various aspects of manufacturing and research.\r\n\r\nDue to its extra-large size this engineering complex can accommodate construction of supercapital ships using the Standup Supercapital Shipyard I Service Module.\r\n\r\nThe Sotiyo provides tethering technology and has docking capabilities for capital-size ships and below.\r\n\r\nOn June 14th YC125 CONCORD updated the capsuleer structure regulations to disallow the anchoring of any new XL structures in highsec space. XL structures that were anchored before this date will not be affected by this change unless they are unanchored.",
+      "group_id": 1404,
+      "capacity": 0.0,
+      "mass": 50000000000.0,
+      "radius": 150000.0,
+      "volume": 800000.0,
+      "packaged_volume": 800000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35828,
+      "name": "Medium Laboratory",
+      "description": "New medium laboratory structure.",
+      "group_id": 1405,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 35829,
+      "name": "Large Laboratory",
+      "description": "New large laboratory structure.",
+      "group_id": 1405,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 35830,
+      "name": "X-Large Laboratory",
+      "description": "New X-large laboratory structure.",
+      "group_id": 1405,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 35832,
+      "name": "Astrahus",
+      "description": "As the entry-level product in the Upwell Consortium's Citadel range of space stations, the Astrahus has been designed as an economical option for medium-scale operations in space, such as serving as a base of operations for a small- to medium-sized corporation, or as an outpost for larger corporations or even small alliances.\r\n\r\nThe Astrahus has been built with new spaceship tethering technology as standard, and will happily accommodate ships under capital size, and even freighter-class hulls, in its internal docking bays. The Astrahus can be configured using Upwell's Standup brand service and structure modules so as to serve the specific needs of the structure operator. Further adjustment of the hardware of the Astrahus can be achieved by installed Standup M-Set rigs to optimize the specific role of the citadel.",
+      "group_id": 1657,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 45000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35833,
+      "name": "Fortizar",
+      "description": "Conceived as a good balance of capability and investment in the Upwell Consortium's Citadel range of space stations, the Fortizar has been designed for large-scale operations in space, such as providing a well-equipped home for large corporations and small alliances, or as a border or trade post for larger alliances.\r\n\r\nThe Fortizar has been built with new spaceship tethering technology as standard, and will readily accommodate most ships, including freighters and even capital ships, in its internal docking bays. While the docks are unable to service 'supercapital' level vessels, the defensive capabilities of the Fortizar are considerably enhanced in lower security star systems with the ability to mount area effect weapons. The Fortizar can be configured using Upwell's Standup brand service and structure modules so as to serve the specific needs of the structure operator. Further adjustment of the hardware of the Fortizar can be achieved by installed Standup L-Set rigs to optimize the specific role of the citadel.",
+      "group_id": 1657,
+      "capacity": 0.0,
+      "mass": 10000000000.0,
+      "radius": 85000.0,
+      "volume": 80000.0,
+      "packaged_volume": 80000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35834,
+      "name": "Keepstar",
+      "description": "Envisaged as the flagship product in the Upwell Consortium's Citadel range of space stations, the Keepstar has been designed for the most important and largest-scale of operations in space, such as providing a fully-featured home for large alliances, and even coalitions, or as a key element in the fortification of large territorial empires.\r\n\r\nThe Keepstar has been built with new spaceship tethering technology as standard, and it will accommodate all size classes of ship, including 'supercapital' vessels, in its internal docking bays. The defensive capabilities of the Keepstar are formidable and are highly enhanced in lower security star systems with the ability to mount area effect and 'doomsday' weapons. The Keepstar can be configured using Upwell's Standup brand service and structure modules so as to serve the specific needs of the structure operator. Further adjustment of the hardware of the Keepstar can be achieved by installed Standup XL-Set rigs to optimize the specific role of the citadel.\r\n\r\nOn June 14th YC125 CONCORD updated the capsuleer structure regulations to disallow the anchoring of any new XL structures in highsec space. XL structures that were anchored before this date will not be affected by this change unless they are unanchored.",
+      "group_id": 1657,
+      "capacity": 0.0,
+      "mass": 50000000000.0,
+      "radius": 150000.0,
+      "volume": 800000.0,
+      "packaged_volume": 800000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35835,
+      "name": "Athanor",
+      "description": "“Seen thousands of auto miners come and go. Like a bucket quarry in space. Easy to get used to. New tech's more like slicing out a volcano and bringing the whole thing up. Don’t think I’ll ever get used to it.” <i>– Ramon Fulcan, veteran moon-mining engineer</i>\r\n\r\nThe Athanor Refinery is a medium-sized structure from the Upwell Consortium and specialized for moon-mining and reaction-based industrial operations. The Athanor is the standard refinery in the Upwell Consortium’s line of industrial structures, and is able to use Upwell's Standup Service modules, allowing flexibility and customization of its functions. \r\n\r\nThis dedicated extraction and refining structure also provides access to Upwell’s M-Set line of rigs designed to improve productivity and optimization of various aspects of chemical reaction and moon-mining operations. The Athanor has docking facilities for subcapital ships and freighters.\r\n\r\nThe Moon Drill Service Module can only be installed if the Refinery is deployed on the eligible moon mining position.",
+      "group_id": 1406,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 45000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35836,
+      "name": "Tatara",
+      "description": "“Oh yeah, I was at C0T-77 when the fusion reactor went critical and blew the side out of the Crown Seven mineworks. We got more promethium out of the debris field in a day than in a month of drilling. I guess it got someone to thinking.” <i>– Ramon Fulcan, veteran moon-mining engineer</i>\r\n\r\nThe Tatara Refinery is a large-sized structure from the Upwell Consortium and specialized for moon-mining and reaction-based industrial operations. The Tatara is the heavy-duty, extended operations refinery in the Upwell Consortium’s line of industrial structures, and is able to use Upwell's Standup Service modules, allowing flexibility and customization of its functions. \r\n\r\nThis dedicated extraction and refining structure also provides access to Upwell’s L-Set line of rigs designed to improve productivity and optimization of various aspects of chemical reaction and moon-mining operations. The Tatara has docking facilities for subcapital ships, freighters, and capital industrial ships.\r\n\r\nThe Moon Drill Service Module can only be installed if the Refinery is deployed on the eligible moon mining position.",
+      "group_id": 1406,
+      "capacity": 0.0,
+      "mass": 10000000000.0,
+      "radius": 45000.0,
+      "volume": 80000.0,
+      "packaged_volume": 80000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35837,
+      "name": "Custom gate 1",
+      "description": "Saminer T-NNJZ prototype",
+      "group_id": 1408,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 35838,
+      "name": "Medium Observatory Array",
+      "description": "New medium observatory array structures.",
+      "group_id": 1407,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 35839,
+      "name": "Large Observatory Array",
+      "description": "New large observatory array structure.",
+      "group_id": 1407,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 35840,
+      "name": "Pharolux Cyno Beacon",
+      "description": "Designed by the Upwell Consortium to function as a successor and improvement over starbase cynosural generator arrays, the Pharolux Cyno Beacon is a key element of their new Fast Logistical EXpansion (FLEX) structures product line. \n\nThe Pharolux provides a stationary cynosural beacon on to which jump-capable vessels can lock their drives and make FTL jumps, safe in the knowledge of a stable connection in a presumably secure location. The Upwell Consortium has made certain improvements but the base technology used in the Pharolux is essentially the tried and true cynosural beacon device.\n\nEach Pharolux Cyno Beacon structure is automatically equipped with one <a href=showinfo:35912>Standup Cynosural Field Generator I</a> service module. This service module may only be onlined in a system that contains a sovereignty hub with the <a href=showinfo:2008>Cynosural Navigation</a> upgrade active.\n\nMay not be deployed within 200km of another Upwell Structure, or 1000km of Stargates, Stations, or Starbases. A maximum of one Cyno Beacon structure may be deployed per system.",
+      "group_id": 2017,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 7000.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35841,
+      "name": "Ansiblex Jump Gate",
+      "description": "Designed by the Upwell Consortium to function as the successor and improvement over starbase jump bridges, the Ansiblex Jump Gate is the flagship of their new Fast Logistical EXpansion (FLEX) structures product line.\n\nThe Ansiblex enables point-to-point FTL travel even for ships that lack their own jump drives, and a matched pair of gates provides a transport connection between two star systems within its operational range, using stabilized spatiotemporal tunneling. The Ansiblex makes a large number of improvements over the older jump bridge portal devices, and incorporates some elements of Triglavian Collective space-time conduit technology in its workings.\n\nEach Ansiblex Jump Gate structure is automatically equipped with one <a href=showinfo:35913>Standup Conduit Generator I</a> service module. This service module may only be onlined in a system that contains a sovereignty hub with the <a href=showinfo:32422>Advanced Logistics Network</a> upgrade active.\n\nMay not be deployed within 500km of another Upwell Structure, or 1000km of Stargates, Stations, or Starbases. A maximum of one Jump Gate may be deployed per system.",
+      "group_id": 1408,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 13000.0,
+      "volume": 6000.0,
+      "packaged_volume": 6000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 35842,
+      "name": "Medium Administration Hub",
+      "description": "New medium administration hub structure.",
+      "group_id": 1409,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 35843,
+      "name": "Large Administration Hub",
+      "description": "New large administration hub",
+      "group_id": 1409,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 35844,
+      "name": "X-Large Administration Hub",
+      "description": "New x-large administration hub",
+      "group_id": 1409,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 35845,
+      "name": "Upwell Monument AM",
+      "description": "",
+      "group_id": 2015,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 37533,
+      "name": "X-Large Observatory Array",
+      "description": "",
+      "group_id": 1407,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 37534,
+      "name": "Tenebrex Cyno Jammer",
+      "description": "Designed by the Upwell Consortium to function as a successor and improvement over starbase cynosural system jammers, the Tenebrex Cyno Jammer is a vital part of their new Fast Logistical EXpansion (FLEX) structures product line.\n\nAs with established, large-scale cynosural jamming technology, the Tenebrex creates a system-wide inhibitor field which prevents cynosural generators, except covert cynosural generators, from functioning. With cynosural jamming an important element of strategic warfare, the Tenebrex incorporates certain improvements on the basic cyno jamming technology that it uses.\n\nEach Tenebrex Cyno Jammer structure is automatically equipped with one <a href=showinfo:35914>Standup Cynosural System Jammer I</a> service module. This service module may only be onlined in a system that contains a sovereignty hub with the <a href=showinfo:2001>Cynosural Suppression</a> upgrade active.\n\nMay not be deployed within 500km of another Upwell Structure, or 1000km of Stargates, Stations, or Starbases. A maximum of three Cyno Jammer structures may be deployed per system, and only one such structure may have its service module activated at any given time.",
+      "group_id": 2016,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 11000.0,
+      "volume": 5000.0,
+      "packaged_volume": 5000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 37535,
+      "name": "Upwell Simple Advertisement Center",
+      "description": "",
+      "group_id": 1410,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 37536,
+      "name": "Upwell Advanced Advertisement Center",
+      "description": "",
+      "group_id": 1410,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 40340,
+      "name": "Upwell Palatine Keepstar",
+      "description": "A very special modification and enhancement of the Keepstar class entry in the Upwell Consortium's Citadel range of space stations, the Palatine Keepstar has been designed as the ultimate prestige base of operations for the pre-eminent capsuleer space empires of New Eden. The materials used to finish the Palatine Keepstar citadel, inside and out, are of highest quality and the design includes some key enhancements aimed at pushing the capabilities of this combination fortress and symbol of power to the utmost. The Palatine Keepstar is being offered under terms of a highly encrypted construction template that will limit the number that can be built and operated at any given time.\r\n\r\nLike the standard Keepstar, the Palatine Keepstar has been built with new spaceship tethering technology as standard, and it will accommodate all size classes of ship, including 'supercapital' vessels, in its internal docking bays. The defensive capabilities of the Palatine Keepstar are formidable and are highly enhanced in lower security star systems with the ability to mount area effect and 'doomsday' weapons. The Palatine Keepstar can be configured using Upwell's Standup brand service and structure modules so as to serve the specific needs of the structure operator. Further adjustment of the hardware of the Palatine Keepstar can be achieved by installed Standup XL-Set rigs to optimize the specific role of the citadel.\r\n\r\nOn June 14th YC125 CONCORD updated the capsuleer structure regulations to disallow the anchoring of any new XL structures in highsec space. XL structures that were anchored before this date will not be affected by this change unless they are unanchored.",
+      "group_id": 1657,
+      "capacity": 0.0,
+      "mass": 50000000000.0,
+      "radius": 150000.0,
+      "volume": 800000.0,
+      "packaged_volume": 800000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 45006,
+      "name": "♦ Sotiyo",
+      "description": "New Eden’s major pirate groups soon realized that Upwell’s Sotiyo-class Engineering Complex could be repurposed very quickly as a fortified shipyard. This idea proved particularly suitable for those pirate organizations increasing the output of their capital shipbuilding programs.\r\nSotiyo-class structures that have been converted to pirate shipyards are formidable targets that are the center of major pirate activity. They are guarded by pirate fleets and are capable of calling in additional response forces.\r\n\r\nThe capsuleer fleet that inflicts the most damage on a pirate shipyard will receive an ISK reward, with individual pilots potentially receiving up to <color=yellow>150,000,000 ISK</color> each.",
+      "group_id": 1876,
+      "capacity": 0.0,
+      "mass": 50000000000.0,
+      "radius": 150000.0,
+      "volume": 800000.0,
+      "packaged_volume": 800000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 46363,
+      "name": "Guristas Pirates Stronghold",
+      "description": "A high-tempo shift of gears for Guristas Pirates raiding throughout the Caldari State, and bordering empire regions of high-security space, the appearance of Guristas Pirates Strongholds represents a major challenge to core empire military and industrial operations.\r\n\r\nNotably, Guristas Pirate mining operations and patrol fleets are able to range out from their strongholds in ever greater numbers, striking in asteroid belts and against vulnerable infrastructure.\r\n\r\nCONCORD has assessed the threat of pirate strongholds as extremely serious and will reward capsuleer groups that take the lead in degrading and destroying outlaw structures of this kind.\r\n\r\nThe capsuleer fleet that inflicts the most damage on a pirate stronghold will receive up to <color=yellow>800,000,000 ISK</color>, with individual pilots potentially receiving up to <color=yellow>30,000,000 ISK</color> each.",
+      "group_id": 1924,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 25000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 46364,
+      "name": "Blood Raiders Stronghold",
+      "description": "Representing an escalation in Blood Raider Covenant activity across the core territories of the Amarr Empire, and neighboring regions of high-security space, the establishment of Blood Raiders Strongholds poses a severe threat to core empire interests.\r\n\r\nIn particular, Blood Raider mining operations and patrol fleets are able to range out from such strongholds in ever greater numbers, striking in asteroid belts and against vulnerable infrastructure.\r\n\r\nCONCORD has assessed the threat of pirate strongholds as extremely serious and will reward capsuleer groups that take the lead in degrading and destroying outlaw structures of this kind.\r\n\r\nThe capsuleer fleet that inflicts the most damage on a pirate stronghold will receive up to <color=yellow>800,000,000 ISK</color>, with individual pilots potentially receiving up to <color=yellow>30,000,000 ISK</color> each.",
+      "group_id": 1924,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 25000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 47512,
+      "name": "'Moreau' Fortizar",
+      "description": "The 'Moreau'-class upgraded Fortizar is a special edition structure released in limited numbers to capsuleers by the Upwell Consortium as part of their outpost migration project of YC120. During the outpost migration event all Conquerable Stations were converted into these new faction Fortizars, and after that event no more copies of this structure or its blueprints have been made available to capsuleers.\r\n\r\nThe 'Moreau' Fortizar enjoys all of the capabilities of a standard Fortizar citadel alongside a large variety of other enhancements. It enjoys increases to most key stats, as well as extra bonuses to industry, fuel consumption, and refining. It is named for Sébastien Moreau, the visionary leader who formed the \"Immensea\" organization that built the conquerable stations throughout most nullsec regions.\r\n\r\nThe Fortizar has been built with new spaceship tethering technology as standard, and will readily accommodate most ships, including freighters and even capital ships, in its internal docking bays. While the docks are unable to service 'supercapital' level vessels, the defensive capabilities of the Fortizar are considerably enhanced in lower security star systems with the ability to mount area effect weapons. The Fortizar can be configured using Upwell's Standup brand service and structure modules so as to serve the specific needs of the structure operator. Further adjustment of the hardware of the Fortizar can be achieved by installed Standup L-Set rigs to optimize the specific role of the citadel.",
+      "group_id": 1657,
+      "capacity": 0.0,
+      "mass": 10000000000.0,
+      "radius": 85000.0,
+      "volume": 80000.0,
+      "packaged_volume": 80000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 47513,
+      "name": "'Draccous' Fortizar",
+      "description": "The 'Draccous'-class upgraded Fortizar is a special edition structure released in limited numbers to capsuleers by the Upwell Consortium as part of their outpost migration project of YC120. During the outpost migration event all Amarr Manufacturing Outposts were converted into these new faction Fortizars, and after that event no more copies of this structure or its blueprints have been made available to capsuleers.\r\n\r\nThe 'Draccous' Fortizar enjoys all of the capabilities of a standard Fortizar citadel alongside reinforced armor plating and enhanced manufacturing facilities. It is named for the \"Draccous Station\" of 0OYZ-G, the first ever Amarr Manufacturing Outpost to be deployed by capsuleers.\r\n\r\nThe Fortizar has been built with new spaceship tethering technology as standard, and will readily accommodate most ships, including freighters and even capital ships, in its internal docking bays. While the docks are unable to service 'supercapital' level vessels, the defensive capabilities of the Fortizar are considerably enhanced in lower security star systems with the ability to mount area effect weapons. The Fortizar can be configured using Upwell's Standup brand service and structure modules so as to serve the specific needs of the structure operator. Further adjustment of the hardware of the Fortizar can be achieved by installed Standup L-Set rigs to optimize the specific role of the citadel.",
+      "group_id": 1657,
+      "capacity": 0.0,
+      "mass": 10000000000.0,
+      "radius": 85000.0,
+      "volume": 80000.0,
+      "packaged_volume": 80000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 47514,
+      "name": "'Horizon' Fortizar",
+      "description": "The 'Horizon'-class upgraded Fortizar is a special edition structure released in limited numbers to capsuleers by the Upwell Consortium as part of their outpost migration project of YC120. During the outpost migration event all Caldari Research Outposts were converted into these new faction Fortizars, and after that event no more copies of this structure or its blueprints have been made available to capsuleers.\r\n\r\nThe 'Horizon' Fortizar enjoys all of the capabilities of a standard Fortizar citadel alongside improved shielding and enhanced research facilities. It is named for the \"Celestial Horizon\" corporation, who were the leading pioneers in outpost construction and deployment. Celestial Horizon deployed the first Minmatar and Caldari outposts in New Eden and co-founded the Ascendant Frontier alliance which built much of the early capsuleer infrastructure in the southern regions of nullsec space.\r\n\r\nThe Fortizar has been built with new spaceship tethering technology as standard, and will readily accommodate most ships, including freighters and even capital ships, in its internal docking bays. While the docks are unable to service 'supercapital' level vessels, the defensive capabilities of the Fortizar are considerably enhanced in lower security star systems with the ability to mount area effect weapons. The Fortizar can be configured using Upwell's Standup brand service and structure modules so as to serve the specific needs of the structure operator. Further adjustment of the hardware of the Fortizar can be achieved by installed Standup L-Set rigs to optimize the specific role of the citadel.",
+      "group_id": 1657,
+      "capacity": 0.0,
+      "mass": 10000000000.0,
+      "radius": 85000.0,
+      "volume": 80000.0,
+      "packaged_volume": 80000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 47515,
+      "name": "'Marginis' Fortizar",
+      "description": "The 'Marginis'-class upgraded Fortizar is a special edition structure released in limited numbers to capsuleers by the Upwell Consortium as part of their outpost migration project of YC120. During the outpost migration event all Gallente Administrative Outposts were converted into these new faction Fortizars, and after that event no more copies of this structure or its blueprints have been made available to capsuleers.\r\n\r\nThe 'Marginis' Fortizar enjoys all of the capabilities of a standard Fortizar citadel alongside reinforced hull bulkheads and significantly optimized fuel consumption for all Upwell service modules. It is named for the \"ISS Marginis\" outpost of KDF-GY, the first ever Gallente Administrative Outpost to be deployed by capsuleers.\r\n\r\nThe Fortizar has been built with new spaceship tethering technology as standard, and will readily accommodate most ships, including freighters and even capital ships, in its internal docking bays. While the docks are unable to service 'supercapital' level vessels, the defensive capabilities of the Fortizar are considerably enhanced in lower security star systems with the ability to mount area effect weapons. The Fortizar can be configured using Upwell's Standup brand service and structure modules so as to serve the specific needs of the structure operator. Further adjustment of the hardware of the Fortizar can be achieved by installed Standup L-Set rigs to optimize the specific role of the citadel.",
+      "group_id": 1657,
+      "capacity": 0.0,
+      "mass": 10000000000.0,
+      "radius": 85000.0,
+      "volume": 80000.0,
+      "packaged_volume": 80000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 47516,
+      "name": "'Prometheus' Fortizar",
+      "description": "The 'Prometheus'-class upgraded Fortizar is a special edition structure released in limited numbers to capsuleers by the Upwell Consortium as part of their outpost migration project of YC120. During the outpost migration event all Minmatar Service Outposts were converted into these new faction Fortizars, and after that event no more copies of this structure or its blueprints have been made available to capsuleers.\r\n\r\nThe 'Prometheus' Fortizar enjoys all of the capabilities of a standard Fortizar citadel alongside enhanced durability and improved reprocessing facilities. It is named for \"Prometheus Station\" of 5P-AIP, the first ever Minmatar Service Outpost to be deployed by capsuleers.\r\n\r\nThe Fortizar has been built with new spaceship tethering technology as standard, and will readily accommodate most ships, including freighters and even capital ships, in its internal docking bays. While the docks are unable to service 'supercapital' level vessels, the defensive capabilities of the Fortizar are considerably enhanced in lower security star systems with the ability to mount area effect weapons. The Fortizar can be configured using Upwell's Standup brand service and structure modules so as to serve the specific needs of the structure operator. Further adjustment of the hardware of the Fortizar can be achieved by installed Standup L-Set rigs to optimize the specific role of the citadel.",
+      "group_id": 1657,
+      "capacity": 0.0,
+      "mass": 10000000000.0,
+      "radius": 85000.0,
+      "volume": 80000.0,
+      "packaged_volume": 80000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 49600,
+      "name": "Upwell Monument 1M",
+      "description": "",
+      "group_id": 2015,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 49601,
+      "name": "Upwell Monument 1F",
+      "description": "",
+      "group_id": 2015,
+      "capacity": 0.0,
+      "mass": 500.0,
+      "radius": 1.0,
+      "volume": 4000.0,
+      "packaged_volume": 4000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 71116,
+      "name": "Amarr Empire Stronghold",
+      "description": "",
+      "group_id": 1924,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 50000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 71117,
+      "name": "Caldari State Stronghold",
+      "description": "",
+      "group_id": 1924,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 50000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 71118,
+      "name": "Gallente Federation Stronghold",
+      "description": "",
+      "group_id": 1924,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 50000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 71119,
+      "name": "Minmatar Republic Stronghold",
+      "description": "",
+      "group_id": 1924,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 50000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 78260,
+      "name": "Angel Cartel FOB",
+      "description": "This Angel Cartel Forward Operating Base is being operated by the insurgency taskforce of the Malakim Zealots. Using a unique mix of Deathless Circle technology discovered, stolen, or otherwise acquired by fair means or foul, this FOB serves as the center of the Angel insurgency and the command center from which the Malakim Zealots orchestrate the spreading corruption and their \"salvage\" operations across nearby space.\r\n\r\nHeavily defended by the Angel Cartel and an interlocking network of shields and disruptive technologies, this FOB will only become vulnerable to attack when local anti-pirate forces are able to bring enough star systems under counter-insurgency suppression.",
+      "group_id": 4644,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 50000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 79172,
+      "name": "Guristas Pirates FOB",
+      "description": "This Guristas Pirates Forward Operating Base is being operated by the insurgency taskforce of the Commando Guri. Using a unique mix of Deathless Circle technology discovered, stolen, or otherwise acquired by fair means or foul, this FOB serves as the center of the Guristas insurgency and the command center from which the Commando Guri orchestrate the spreading corruption and their \"salvage\" operations across nearby space.\r\n\r\nHeavily defended by Guristas Pirates and an interlocking network of shields and disruptive technologies, this FOB will only become vulnerable to attack when local anti-pirate forces are able to bring enough star systems under counter-insurgency suppression.",
+      "group_id": 4644,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 50000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": false,
+      "icon_id": null
+    },
+    {
+      "id": 81080,
+      "name": "Orbital Skyhook",
+      "description": "The Orbital Skyhook stands as the Upwell Consortium's pinnacle achievement in advancing colonization and space infrastructure technology. Harnessing cutting-edge materials science and technology from member corporations and innovative R&D programs, Upwell has brought these marvels to life in record time. These skyhooks exhibit significantly heightened efficiency in construction, maintenance, and the transportation of resources from surface to orbit. When established, they streamline the transfer of power, workforce, and reagents from planets to orbital facilities and beyond.\r\n\r\nTailored variants cater to the diverse environments of different planets, featuring specialized features such as long-range tractor beams for workforces on temperate, ocean, and barren planets, packaging facilities for ice and lava planets' reagents, and power collection platforms for gas, plasma, and storm planets.\r\n\r\nHowever, managers are advised that such structures may inadvertently attract unsavory elements, such as pirates, due to their strategic importance and valuable cargo.",
+      "group_id": 4736,
+      "capacity": 35000.0,
+      "mass": 5000000000.0,
+      "radius": 45000.0,
+      "volume": 8000.0,
+      "packaged_volume": 8000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 81826,
+      "name": "Metenox Moon Drill",
+      "description": "The Upwell Consortium, renowned for its successful Athanor and Tatara class refineries, recognized the mounting challenges faced by its customers with moon-mining operations. In response, they unveiled the Metenox moon drill, a hands-off deployable employing traditional surface-grazing techniques. \r\n \r\nAlthough these autonomous facilities are less efficient at material extraction than refineries and are more vulnerable to raids due to lighter plating, short reinforcement windows, and also garner high power demands requiring colony reagents, the Consortium insists that their autonomous functionality is a worthy trade-off.\r\n \r\nPlease note: The Metenox moon drill must be positioned within 250km of an eligible moon mining site and exclusively in systems rated 0.4 security or lower.",
+      "group_id": 4744,
+      "capacity": 0.0,
+      "mass": 3000000000.0,
+      "radius": 25000.0,
+      "volume": 6000.0,
+      "packaged_volume": 6000.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": 26065
+    },
+    {
+      "id": 85230,
+      "name": "Mercenary Den",
+      "description": "The Deathless Circle has developed an open-source facility known throughout the cluster as a “Mercenary Den.” Allegedly designed as a hub for Upwell clones to rest and relax, they have quickly become congregating points for mercenaries looking for work and clones seeking to escape it. This facility provides an ideal environment for enjoying alcoholic drinks, watching the latest SCOPE broadcasts, and engaging in impromptu combat training.\r\n\r\nThe Deathless has released a statement that any Upwell legal teams bothered about misuse of the Transneural Echo Burn Scanner “booths” included with the structure should \"kindly leave and pass away peacefully.\"\r\n\r\nPlease note that at this time, Mercenary Dens can only sustain themselves when linked to a nearby temperate planet Skyhook.",
+      "group_id": 4810,
+      "capacity": 3000.0,
+      "mass": 10000.0,
+      "radius": 2500.0,
+      "volume": 50.0,
+      "packaged_volume": 50.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    },
+    {
+      "id": 85980,
+      "name": "'Seneschal' Mercenary Den",
+      "description": "In anticipation of aggression from capsuleers and other hostile agents targeting Mercenary Dens without provocation, The Deathless Circle has released an upgraded variant of the base structure, featuring enhanced shielding, armor, and hull strength.\r\n\r\nAdditionally, small Deathless Circle pilot fleets patrol near Seneschals, attacking anyone who initiates aggressive actions against the structure.",
+      "group_id": 4810,
+      "capacity": 3000.0,
+      "mass": 10000.0,
+      "radius": 2500.0,
+      "volume": 50.0,
+      "packaged_volume": 50.0,
+      "portion_size": 1,
+      "published": true,
+      "icon_id": null
+    }
+  ]
+}

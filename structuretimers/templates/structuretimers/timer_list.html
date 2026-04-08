@@ -30,7 +30,7 @@
                     {% for staging_system in stageing_systems %}
                         <li>
                             <a class="dropdown-item" href="{% url 'structuretimers:timer_list' %}?staging={{ staging_system.eve_solar_system.name }}">
-                                {{ staging_system }} ({{ staging_system.eve_solar_system.eve_constellation.eve_region }})
+                                {{ staging_system }} ({{ staging_system.eve_solar_system.constellation.region }})
                                 {% if staging_system.is_main %} {% translate "[MAIN]" %} {% endif %}
                             </a>
                         </li>
@@ -70,7 +70,7 @@
             </div>
             <p class="text-muted">
                 {% translate "*: Distance from selected staging system:" %} {{ selected_staging_system|default:"?" }}
-                ({{ selected_staging_system.eve_solar_system.eve_constellation.eve_region|default:"?" }})
+                ({{ selected_staging_system.eve_solar_system.constellation.region|default:"?" }})
             </p>
         </div>
     </div>

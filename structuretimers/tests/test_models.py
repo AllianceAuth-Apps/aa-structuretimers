@@ -9,7 +9,7 @@ from django.core.cache import cache
 from django.db import models
 from django.test import TestCase, override_settings
 from django.utils.timezone import now
-from eveuniverse.models import EveRegion, EveSolarSystem, EveType
+from eve_sde.models import ItemType, Region, SolarSystem
 
 from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 from app_utils.json import JSONDateTimeDecoder
@@ -34,7 +34,7 @@ from .testdata.factory import (
     create_user,
 )
 from .testdata.fixtures import LoadTestDataMixin
-from .testdata.load_eveuniverse import load_eveuniverse
+from .testdata.load_eve_sde import load_eve_sde
 from .utils import add_permission_to_user_by_name
 
 MODULE_PATH = "structuretimers.models"
@@ -267,12 +267,12 @@ class TestTimerSpaceType(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
-        load_eveuniverse()
+        load_eve_sde()
 
     def test_can_detect_high_sec(self):
         # when
         result = Timer.SpaceType.from_eve_solar_system(
-            EveSolarSystem.objects.get(name="Jita")
+            SolarSystem.objects.get(name="Jita")
         )
         # then
         self.assertEqual(result, Timer.SpaceType.HIGH_SEC)
@@ -280,7 +280,7 @@ class TestTimerSpaceType(NoSocketsTestCase):
     def test_can_detect_low_sec(self):
         # when
         result = Timer.SpaceType.from_eve_solar_system(
-            EveSolarSystem.objects.get(name="Abune")
+            SolarSystem.objects.get(name="Abune")
         )
         # then
         self.assertEqual(result, Timer.SpaceType.LOW_SEC)
@@ -288,7 +288,7 @@ class TestTimerSpaceType(NoSocketsTestCase):
     def test_can_detect_null_sec(self):
         # when
         result = Timer.SpaceType.from_eve_solar_system(
-            EveSolarSystem.objects.get(name="HED-GP")
+            SolarSystem.objects.get(name="HED-GP")
         )
         # then
         self.assertEqual(result, Timer.SpaceType.NULL_SEC)
@@ -296,7 +296,7 @@ class TestTimerSpaceType(NoSocketsTestCase):
     def test_can_detect_w_space(self):
         # when
         result = Timer.SpaceType.from_eve_solar_system(
-            EveSolarSystem.objects.get(name="J151645")
+            SolarSystem.objects.get(name="J151645")
         )
         # then
         self.assertEqual(result, Timer.SpaceType.WH_SPACE)
@@ -782,7 +782,7 @@ class TestDiscordWebhookSendMessageToWebhook(NoSocketsTestCase):
 class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
     def test_should_match_when_no_rules_set(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
+        timer = create_timer(eve_solar_system=SolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule()
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
@@ -950,93 +950,93 @@ class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_should_match_require_regions(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
+        timer = create_timer(eve_solar_system=SolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule()
-        rule.require_regions.add(EveRegion.objects.get(name="Essence"))
+        rule.require_regions.add(Region.objects.get(name="Essence"))
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_require_regions(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
+        timer = create_timer(eve_solar_system=SolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule()
-        rule.require_regions.add(EveRegion.objects.get(name="Black Rise"))
+        rule.require_regions.add(Region.objects.get(name="Black Rise"))
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
     def test_should_match_exclude_regions(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
+        timer = create_timer(eve_solar_system=SolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule()
-        rule.exclude_regions.add(EveRegion.objects.get(name="Essence"))
+        rule.exclude_regions.add(Region.objects.get(name="Essence"))
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
     def test_should_not_match_exclude_regions(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
+        timer = create_timer(eve_solar_system=SolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule()
-        rule.exclude_regions.add(EveRegion.objects.get(name="Black Rise"))
+        rule.exclude_regions.add(Region.objects.get(name="Black Rise"))
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_match_require_space_types(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
+        timer = create_timer(eve_solar_system=SolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule(require_space_types=[Timer.SpaceType.LOW_SEC])
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_require_space_types(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
+        timer = create_timer(eve_solar_system=SolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule(require_space_types=[Timer.SpaceType.NULL_SEC])
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
     def test_should_match_exclude_space_types(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
+        timer = create_timer(eve_solar_system=SolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule(exclude_space_types=[Timer.SpaceType.NULL_SEC])
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_exclude_space_types(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
+        timer = create_timer(eve_solar_system=SolarSystem.objects.get(name="Abune"))
         rule = create_notification_rule(exclude_space_types=[Timer.SpaceType.LOW_SEC])
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
     def test_should_match_include_structure_types(self):
         # given
-        timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
+        timer = create_timer(structure_type=ItemType.objects.get(name="Raitaru"))
         rule = create_notification_rule()
-        rule.require_structure_types.add(EveType.objects.get(name="Raitaru"))
+        rule.require_structure_types.add(ItemType.objects.get(name="Raitaru"))
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_include_structure_types(self):
         # given
-        timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
+        timer = create_timer(structure_type=ItemType.objects.get(name="Raitaru"))
         rule = create_notification_rule()
-        rule.require_structure_types.add(EveType.objects.get(name="Fortizar"))
+        rule.require_structure_types.add(ItemType.objects.get(name="Fortizar"))
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
     def test_should_match_exclude_structure_types(self):
         # given
-        timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
+        timer = create_timer(structure_type=ItemType.objects.get(name="Raitaru"))
         rule = create_notification_rule()
-        rule.exclude_structure_types.add(EveType.objects.get(name="Fortizar"))
+        rule.exclude_structure_types.add(ItemType.objects.get(name="Fortizar"))
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
     def test_should_not_match_exclude_structure_types(self):
         # given
-        timer = create_timer(structure_type=EveType.objects.get(name="Raitaru"))
+        timer = create_timer(structure_type=ItemType.objects.get(name="Raitaru"))
         rule = create_notification_rule()
-        rule.exclude_structure_types.add(EveType.objects.get(name="Raitaru"))
+        rule.exclude_structure_types.add(ItemType.objects.get(name="Raitaru"))
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
@@ -1205,8 +1205,8 @@ class TestNotificationRuleSave(LoadTestDataMixin, NoSocketsTestCase):
         self.assertFalse(ScheduledNotification.objects.filter(pk=obj.pk).exists())
 
 
-@patch(MODULE_PATH + ".EveSolarSystem.distance_to", lambda *args, **kwargs: 4.257e16)
-@patch(MODULE_PATH + ".EveSolarSystem.jumps_to", lambda *args, **kwargs: 3)
+@patch(MODULE_PATH + ".SolarSystem.distance_to", lambda *args, **kwargs: 4.257e16)
+@patch(MODULE_PATH + ".SolarSystem.jumps_to", lambda *args, **kwargs: 3)
 @patch(MODULE_PATH + "._task_calc_staging_system", wraps=_task_calc_staging_system)
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
 class TestStagingSystem(LoadTestDataMixin, NoSocketsTestCase):
@@ -1248,8 +1248,8 @@ class TestStagingSystem(LoadTestDataMixin, NoSocketsTestCase):
         self.assertFalse(spy_task_calc_staging_system.called)
 
 
-@patch(MODULE_PATH + ".EveSolarSystem.jumps_to", spec=True)
-@patch(MODULE_PATH + ".EveSolarSystem.distance_to", spec=True)
+@patch(MODULE_PATH + ".SolarSystem.jumps_to", spec=True)
+@patch(MODULE_PATH + ".SolarSystem.distance_to", spec=True)
 class TestDistancesFromStaging(LoadTestDataMixin, NoSocketsTestCase):
     def test_should_calculate_distances(self, mock_distance_to, mock_jumps_to):
         # given

@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 from django.contrib.auth.models import User
 from django.utils.timezone import now
-from eveuniverse.models import EveSolarSystem, EveType
+from eve_sde.models import ItemType, SolarSystem
 
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter
@@ -52,8 +52,8 @@ def create_distances_from_staging(
 
 def create_timer(light_years=None, jumps=None, enabled_notifications=False, **kwargs):
     params = {
-        "eve_solar_system": EveSolarSystem.objects.get(id=30004984),
-        "structure_type": EveType.objects.get(id=35825),
+        "eve_solar_system": SolarSystem.objects.get(id=30004984),
+        "structure_type": ItemType.objects.get(id=35825),
     }
     if "timer_type" not in kwargs or kwargs["timer_type"] != Timer.Type.PRELIMINARY:
         params["date"] = now() + dt.timedelta(days=3)
@@ -81,7 +81,7 @@ def create_timer(light_years=None, jumps=None, enabled_notifications=False, **kw
 
 
 def create_staging_system(light_years=None, jumps=None, **kwargs):
-    params = {"eve_solar_system": EveSolarSystem.objects.get(id=30045339)}  # enaluri
+    params = {"eve_solar_system": SolarSystem.objects.get(id=30045339)}  # enaluri
     params.update(kwargs)
     with patch("structuretimers.models._task_calc_staging_system", Mock()):
         staging_system = StagingSystem.objects.create(**params)

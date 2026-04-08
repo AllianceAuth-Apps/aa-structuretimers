@@ -29,7 +29,7 @@ dependencies = [
     "allianceauth-app-utils>=1.27",
     "allianceauth>=4,<5",
     "dhooks_lite>=1.0.0",
-    "django-eveuniverse>=0.16",
+    "django-eveonline-sde==0.0.1b9",
     "django-multiselectfield",
     "redis-simple-mq>=0.4",
     "requests",
@@ -58,7 +58,7 @@ sections = [
     "LOCALFOLDER",
 ]
 known_allianceauth = ["allianceauth", "app_utils"]
-known_django = ["django", "django_webtest", "esi", "eveuniverse"]
+known_django = ["django", "django_webtest", "esi", "eve_sde"]
 
 [tool.pylint.'MASTER']
 ignore-patterns = ["__init__.py", "auth_hooks.py", "apps.py", "admin.py"]

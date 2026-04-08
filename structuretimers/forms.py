@@ -12,7 +12,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.html import format_html
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from eveuniverse.models import EveSolarSystem, EveType
+from eve_sde.models import ItemType, SolarSystem
 
 from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
@@ -184,8 +184,8 @@ class TimerForm(forms.ModelForm):
 
     def _clean_structure_type(self, cleaned_data: Dict[str, Any]):
         try:
-            structure_type = EveType.objects.get(id=cleaned_data["structure_type_2"])
-        except EveType.DoesNotExist as ex:
+            structure_type = ItemType.objects.get(id=cleaned_data["structure_type_2"])
+        except ItemType.DoesNotExist as ex:
             raise ValidationError(
                 {"structure_type_2": _("Invalid structure type.")}
             ) from ex
@@ -195,14 +195,14 @@ class TimerForm(forms.ModelForm):
         ]
         if (
             cleaned_data.get("timer_type") == Timer.Type.MOONMINING
-            and structure_type.eve_group_id != EveGroupId.REFINERY
+            and structure_type.group_id != EveGroupId.REFINERY
         ):
             raise ValidationError(
                 {"timer_type": _("Moon mining timers are valid for refineries only.")}
             )
         if (
             cleaned_data.get("timer_type") == Timer.Type.THEFT
-            and structure_type.eve_group_id != EveGroupId.SKYHOOK
+            and structure_type.group_id != EveGroupId.SKYHOOK
         ):
             raise ValidationError(
                 {"timer_type": _("Theft timers are valid for skyhook only.")}
@@ -210,10 +210,10 @@ class TimerForm(forms.ModelForm):
 
     def _clean_solar_system(self, cleaned_data: Dict[str, Any]):
         try:
-            solar_system = EveSolarSystem.objects.get(
+            solar_system = SolarSystem.objects.get(
                 id=cleaned_data["eve_solar_system_2"]
             )
-        except EveSolarSystem.DoesNotExist as ex:
+        except SolarSystem.DoesNotExist as ex:
             raise ValidationError(
                 {"eve_solar_system_2": _("Invalid solar system.")}
             ) from ex

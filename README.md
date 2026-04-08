@@ -70,7 +70,7 @@ Please make sure you meet all preconditions before proceeding:
 
 1. Structure Timers is a plugin for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth). If you don't have Alliance Auth running already, please install it first before proceeding. (see the official [AA installation guide](https://allianceauth.readthedocs.io/en/latest/installation/auth/allianceauth/) for details)
 
-2. Structure Timers needs the app [django-eveuniverse](https://gitlab.com/ErikKalkoken/django-eveuniverse) to function. Please make sure it is installed, before continuing.
+2. Structure Timers needs the app [django-eveonline-sde](https://pypi.org/project/django-eveonline-sde/) to function. Please make sure it is installed, before continuing.
 
 Note that Structure Timers is compatible with Alliance Auth's Structure Timer app and can be installed in parallel.
 
@@ -112,12 +112,6 @@ Restart your supervisor services for Auth
 ### Step 5 - Preload Eve Universe data
 
 In order to be able to select solar systems and structure types for timers you need to preload some data from ESI once. If you already have run those commands previously you can skip this step.
-
-Load Eve Online map:
-
-```bash
-python manage.py eveuniverse_load_data map
-```
 
 ```bash
 python manage.py structuretimers_load_eve

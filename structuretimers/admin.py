@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.db.models.functions import Lower
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from eveuniverse.models import EveRegion
+from eve_sde.models import Region
 
 from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 
@@ -313,7 +313,7 @@ class NotificationRuleAdmin(admin.ModelAdmin):
                 Lower("corporation_name")
             )
         elif db_field.name in {"require_regions", "exclude_regions"}:
-            kwargs["queryset"] = EveRegion.objects.order_by(Lower("name"))
+            kwargs["queryset"] = Region.objects.order_by(Lower("name"))
         elif db_field.name in {"require_structure_types", "exclude_structure_types"}:
             kwargs["queryset"] = StructureTimersEveType.objects.order_by(Lower("name"))
         return super().formfield_for_manytomany(db_field, request, **kwargs)
@@ -399,16 +399,16 @@ class StagingSystemAdmin(admin.ModelAdmin):
     list_display = ("eve_solar_system", "_region", "is_main")
     list_select_related = (
         "eve_solar_system",
-        "eve_solar_system__eve_constellation__eve_region",
+        "eve_solar_system__constellation__region",
     )
     autocomplete_fields = ["eve_solar_system"]
     ordering = ("eve_solar_system__name",)
     form = StagingSystemAdminForm
 
-    @admin.display(ordering="eve_solar_system__eve_constellation__eve_region")
+    @admin.display(ordering="eve_solar_system__constellation__region")
     def _region(self, obj) -> str:
         if obj.eve_solar_system:
-            return obj.eve_solar_system.eve_constellation.eve_region.name
+            return obj.eve_solar_system.constellation.region.name
         return ""
 
     actions = ["_recalc_timers"]

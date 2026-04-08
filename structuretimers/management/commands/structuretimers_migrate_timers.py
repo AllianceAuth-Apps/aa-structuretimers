@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.db import models
 from django.utils.timezone import now
-from eveuniverse.models import EveSolarSystem
+from eve_sde.models import SolarSystem
 
 from app_utils.django import app_labels
 
@@ -87,8 +87,8 @@ class Command(BaseCommand):
         skipped_count = 0
         for auth_timer in auth_timers_qs:
             try:
-                eve_solar_system = EveSolarSystem.objects.get(name=auth_timer.system)
-            except EveSolarSystem.DoesNotExist:
+                eve_solar_system = SolarSystem.objects.get(name=auth_timer.system)
+            except SolarSystem.DoesNotExist:
                 self.stdout.write(
                     self.style.WARNING(
                         f"Can not migrate timer '{auth_timer}', "

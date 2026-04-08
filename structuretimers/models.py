@@ -15,8 +15,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from eveuniverse.helpers import meters_to_ly
-from eveuniverse.models import EveRegion, EveSolarSystem, EveType
+from eve_sde.models import ItemType, Region, SolarSystem
 
 from allianceauth.eveonline.evelinks import dotlan
 from allianceauth.eveonline.models import (
@@ -36,6 +35,7 @@ from .app_settings import (
     STRUCTURETIMER_NOTIFICATION_SET_AVATAR,
     STRUCTURETIMERS_NOTIFICATIONS_ENABLED,
 )
+from .eve_compat import meters_to_ly
 from .managers import (
     DistancesFromStagingManager,
     NotificationRuleManager,
@@ -344,7 +344,7 @@ class Timer(models.Model):
         WH_SPACE = "WS", _("wh space")
 
         @classmethod
-        def from_eve_solar_system(cls, eve_solar_system: Optional[EveSolarSystem]):
+        def from_eve_solar_system(cls, eve_solar_system: Optional[SolarSystem]):
             """Determine the space type of a solar system and return it."""
             if not eve_solar_system:
                 return cls.UNDEFINED
@@ -408,7 +408,7 @@ class Timer(models.Model):
         help_text="Corporation of the user who created this timer",
     )
     eve_solar_system = models.ForeignKey(
-        EveSolarSystem,
+        SolarSystem,
         on_delete=models.CASCADE,
         default=None,
         null=True,
@@ -452,7 +452,7 @@ class Timer(models.Model):
         help_text="Name of the corporation owning the structure",
     )
     structure_type = models.ForeignKey(
-        EveType, on_delete=models.CASCADE, related_name="+"
+        ItemType, on_delete=models.CASCADE, related_name="+"
     )
     structure_name = models.CharField(max_length=254, default="", blank=True)
     timer_type = models.CharField(max_length=2, choices=Type.choices, default=Type.NONE)
@@ -600,7 +600,7 @@ class Timer(models.Model):
             structure_name_text = f"{article} **{structure_type_name}**"
 
         region_name = (
-            self.eve_solar_system.eve_constellation.eve_region.name
+            self.eve_solar_system.constellation.region.name
             if self.eve_solar_system
             else ""
         )
@@ -646,8 +646,8 @@ class Timer(models.Model):
         )
 
 
-class StructureTimersEveType(EveType):
-    """Extends EveType to add a manager for structure lists."""
+class StructureTimersEveType(ItemType):
+    """Extends ItemType to add a manager for structure lists."""
 
     class Meta:
         proxy = True
@@ -827,7 +827,7 @@ class NotificationRule(models.Model):
         help_text="Wether the timer must be OPSEC",
     )
     require_regions = models.ManyToManyField(
-        EveRegion,
+        Region,
         blank=True,
         related_name="+",
         help_text=(
@@ -836,7 +836,7 @@ class NotificationRule(models.Model):
         ),
     )
     exclude_regions = models.ManyToManyField(
-        EveRegion,
+        Region,
         blank=True,
         related_name="+",
         help_text="Timer must NOT be created within one of the given regions",
@@ -856,7 +856,7 @@ class NotificationRule(models.Model):
         help_text="Space Type must NOT be one of the selected",
     )
     require_structure_types = models.ManyToManyField(
-        EveType,
+        ItemType,
         blank=True,
         related_name="+",
         help_text=(
@@ -864,7 +864,7 @@ class NotificationRule(models.Model):
         ),
     )
     exclude_structure_types = models.ManyToManyField(
-        EveType,
+        ItemType,
         blank=True,
         related_name="notification_rule_exclude_structure_types",
         help_text="Structure type must NOT be one of the selected",
@@ -955,13 +955,13 @@ class NotificationRule(models.Model):
 
         if is_matching and timer.eve_solar_system and self.require_regions.exists():
             is_matching = (
-                timer.eve_solar_system.eve_constellation.eve_region
+                timer.eve_solar_system.constellation.region
                 in self.require_regions.all()
             )
 
         if is_matching and timer.eve_solar_system and self.exclude_regions.exists():
             is_matching = (
-                timer.eve_solar_system.eve_constellation.eve_region
+                timer.eve_solar_system.constellation.region
                 not in self.exclude_regions.all()
             )
         if is_matching and self.require_space_types:
@@ -1016,7 +1016,7 @@ class StagingSystem(models.Model):
     """A staging system."""
 
     eve_solar_system = models.OneToOneField(
-        EveSolarSystem,
+        SolarSystem,
         on_delete=models.SET_DEFAULT,
         default=None,
         null=True,
