@@ -13,6 +13,8 @@ from simple_mq import SimpleMQ
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from eveuniverse.helpers import meters_to_ly
@@ -472,6 +474,12 @@ class Timer(models.Model):
 
     objects = TimerManager()
 
+    def __init__(self: "Timer", *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_eve_solar_system_id = self.eve_solar_system_id
+        self._original_date = self.date
+        self._original_timer_type = self.timer_type
+
     def __str__(self):
         timer_type = self.get_timer_type_display()
         structure_name = self.structure_display_name
@@ -486,48 +494,6 @@ class Timer(models.Model):
             if self.timer_type == self.Type.PRELIMINARY
             else url
         )
-
-    def save(self, *args, **kwargs):
-        """New save method for Timers. Will also schedule notifications for timers.
-
-        Args:
-            disable_notifications: Set to True to disable all notifications for the saved timer
-        """
-        try:
-            disable_notifications = kwargs.pop("disable_notifications")
-        except KeyError:
-            disable_notifications = False
-        schedule_notifications = (
-            STRUCTURETIMERS_NOTIFICATIONS_ENABLED
-            and not disable_notifications
-            and self.timer_type != self.Type.PRELIMINARY
-        )
-        try:
-            old_instance = Timer.objects.get(pk=self.pk)
-        except (Timer.DoesNotExist, ValueError):
-            needs_recalc = True
-            date_changed = False
-            old_instance = None
-        else:
-            needs_recalc = self.eve_solar_system != old_instance.eve_solar_system
-            date_changed = self.date != old_instance.date
-        is_new = self.pk is None
-        super().save(*args, **kwargs)
-        if needs_recalc:
-            self.distances.all().delete()
-            _task_calc_timer_distances_for_all_staging_systems().apply_async(
-                args=[self.pk], priority=4
-            )
-        if (
-            self.timer_type == self.Type.PRELIMINARY
-            and old_instance
-            and old_instance.timer_type != self.Type.PRELIMINARY
-        ):
-            self.scheduled_notifications.all().delete()
-        if schedule_notifications and (is_new or date_changed):
-            _task_schedule_notifications_for_timer().apply_async(
-                kwargs={"timer_pk": self.pk, "is_new": is_new}, priority=3
-            )
 
     @property
     def structure_display_name(self) -> str:
@@ -1045,3 +1011,34 @@ class DistancesFromStaging(models.Model):
             self.jumps = self.staging_system.eve_solar_system.jumps_to(
                 self.timer.eve_solar_system
             )
+
+
+@receiver(post_save, sender=Timer)
+def handle_timer_save(sender, instance: Timer, created: bool, **kwargs):
+    """Update timer distances from staging and schedule notifications as needed
+    after a timer was saved.
+    """
+    schedule_notifications = (
+        STRUCTURETIMERS_NOTIFICATIONS_ENABLED
+        and Timer.timer_type != Timer.Type.PRELIMINARY
+    )
+    date_changed = instance.date != instance._original_date
+    needs_recalc = (
+        created
+        or date_changed
+        or instance.eve_solar_system.id != instance._original_eve_solar_system_id
+    )
+    if needs_recalc:
+        instance.distances.all().delete()
+        _task_calc_timer_distances_for_all_staging_systems().apply_async(
+            args=[instance.pk], priority=4
+        )
+    if (
+        instance.timer_type == Timer.Type.PRELIMINARY
+        and instance._original_timer_type != Timer.Type.PRELIMINARY
+    ):
+        instance.scheduled_notifications.all().delete()
+    if schedule_notifications and (created or date_changed):
+        _task_schedule_notifications_for_timer().apply_async(
+            kwargs={"timer_pk": instance.pk, "is_new": created}, priority=3
+        )
