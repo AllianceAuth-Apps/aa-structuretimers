@@ -13,6 +13,8 @@ from simple_mq import SimpleMQ
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from eveuniverse.helpers import meters_to_ly
@@ -472,10 +474,19 @@ class Timer(models.Model):
 
     objects = TimerManager()
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_eve_solar_system_id = self.eve_solar_system_id
+        self._original_date = self.date
+        self._original_timer_type = self.timer_type
+
     def __str__(self):
+        if self.timer_type != Timer.Type.PRELIMINARY and self.date:
+            date = f" @ {self.date.strftime(DATETIME_FORMAT)}"
+        else:
+            date = ""
         timer_type = self.get_timer_type_display()
         structure_name = self.structure_display_name
-        date = f" @ {self.date.strftime(DATETIME_FORMAT)}" if self.date else ""
         return f"{timer_type} timer for {structure_name}{date}"
 
     def get_absolute_url(self) -> str:
@@ -486,48 +497,6 @@ class Timer(models.Model):
             if self.timer_type == self.Type.PRELIMINARY
             else url
         )
-
-    def save(self, *args, **kwargs):
-        """New save method for Timers. Will also schedule notifications for timers.
-
-        Args:
-            disable_notifications: Set to True to disable all notifications for the saved timer
-        """
-        try:
-            disable_notifications = kwargs.pop("disable_notifications")
-        except KeyError:
-            disable_notifications = False
-        schedule_notifications = (
-            STRUCTURETIMERS_NOTIFICATIONS_ENABLED
-            and not disable_notifications
-            and self.timer_type != self.Type.PRELIMINARY
-        )
-        try:
-            old_instance = Timer.objects.get(pk=self.pk)
-        except (Timer.DoesNotExist, ValueError):
-            needs_recalc = True
-            date_changed = False
-            old_instance = None
-        else:
-            needs_recalc = self.eve_solar_system != old_instance.eve_solar_system
-            date_changed = self.date != old_instance.date
-        is_new = self.pk is None
-        super().save(*args, **kwargs)
-        if needs_recalc:
-            self.distances.all().delete()
-            _task_calc_timer_distances_for_all_staging_systems().apply_async(
-                args=[self.pk], priority=4
-            )
-        if (
-            self.timer_type == self.Type.PRELIMINARY
-            and old_instance
-            and old_instance.timer_type != self.Type.PRELIMINARY
-        ):
-            self.scheduled_notifications.all().delete()
-        if schedule_notifications and (is_new or date_changed):
-            _task_schedule_notifications_for_timer().apply_async(
-                kwargs={"timer_pk": self.pk, "is_new": is_new}, priority=3
-            )
 
     @property
     def structure_display_name(self) -> str:
@@ -638,6 +607,42 @@ class Timer(models.Model):
             embeds=[embed],
             username=username,
             avatar_url=avatar_url,
+        )
+
+
+@receiver(post_save, sender=Timer)
+def handle_timer_save(
+    sender,  # pylint: disable=unused-argument
+    instance: Timer,
+    created: bool,
+    **kwargs,
+):
+    """Update timer distances from staging and schedule notifications as needed
+    after a timer was saved.
+    """
+    schedule_notifications = (
+        STRUCTURETIMERS_NOTIFICATIONS_ENABLED
+        and instance.timer_type != Timer.Type.PRELIMINARY
+    )
+    date_changed = instance.date != instance._original_date
+    needs_recalc = (
+        created
+        or date_changed
+        or instance.eve_solar_system.id != instance._original_eve_solar_system_id
+    )
+    if needs_recalc:
+        instance.distances.all().delete()
+        _task_calc_timer_distances_for_all_staging_systems().apply_async(
+            args=[instance.pk], priority=4
+        )
+    if (
+        instance.timer_type == Timer.Type.PRELIMINARY
+        and instance._original_timer_type != Timer.Type.PRELIMINARY
+    ):
+        instance.scheduled_notifications.all().delete()
+    if schedule_notifications and (created or date_changed):
+        _task_schedule_notifications_for_timer().apply_async(
+            kwargs={"timer_pk": instance.pk, "is_new": created}, priority=3
         )
 
 
@@ -847,20 +852,6 @@ class NotificationRule(models.Model):
     def __str__(self) -> str:
         return f"Notification Rule #{self.id}"
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if (
-            STRUCTURETIMERS_NOTIFICATIONS_ENABLED
-            and self.is_enabled
-            and self.trigger == self.Trigger.SCHEDULED_TIME_REACHED
-        ):
-            self._import_schedule_notifications_for_rule().apply_async(
-                kwargs={"notification_rule_pk": self.pk}, priority=4
-            )
-
-        if self.trigger == self.Trigger.NEW_TIMER_CREATED:
-            self.scheduled_notifications.all().delete()
-
     @staticmethod
     def _import_schedule_notifications_for_rule() -> object:
         from .tasks import schedule_notifications_for_rule
@@ -945,6 +936,26 @@ class NotificationRule(models.Model):
         return is_matching
 
 
+@receiver(post_save, sender=NotificationRule)
+def handle_rule_save(
+    sender,  # pylint: disable=unused-argument
+    instance: NotificationRule,
+    **kwargs,
+):
+    """Update scheduled notifications a needed on save."""
+    if (
+        STRUCTURETIMERS_NOTIFICATIONS_ENABLED
+        and instance.is_enabled
+        and instance.trigger == NotificationRule.Trigger.SCHEDULED_TIME_REACHED
+    ):
+        instance._import_schedule_notifications_for_rule().apply_async(
+            kwargs={"notification_rule_pk": instance.pk}, priority=4
+        )
+
+    if instance.trigger == NotificationRule.Trigger.NEW_TIMER_CREATED:
+        instance.scheduled_notifications.all().delete()
+
+
 class ScheduledNotification(models.Model):
     """A scheduled notification task"""
 
@@ -992,22 +1003,31 @@ class StagingSystem(models.Model):
     )  # TODO: Remove Nullable if possible, because it is causing issues
     is_main = models.BooleanField(default=False)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_eve_solar_system_id = self.eve_solar_system_id
+
     def __str__(self) -> str:
         return str(self.eve_solar_system)
 
-    def save(self, *args, **kwargs) -> None:
-        try:
-            old_instance = StagingSystem.objects.get(pk=self.pk)
-        except (StagingSystem.DoesNotExist, ValueError):
-            needs_recalc = True
-        else:
-            needs_recalc = old_instance.eve_solar_system != self.eve_solar_system
-        if self.is_main:
-            StagingSystem.objects.update(is_main=False)
-        super().save(*args, **kwargs)
-        if needs_recalc:
-            self.distances.all().delete()
-            _task_calc_staging_system().delay(self.pk)
+
+@receiver(post_save, sender=StagingSystem)
+def handle_staging_system_save(
+    sender,  # pylint: disable=unused-argument
+    instance: StagingSystem,
+    created: bool,
+    **kwargs,
+):
+    """Update distances for staging system on save as needed."""
+    needs_recalc = (
+        created
+        or instance.eve_solar_system.id != instance._original_eve_solar_system_id
+    )
+    if instance.is_main:
+        StagingSystem.objects.exclude(pk=instance.pk).update(is_main=False)
+    if needs_recalc:
+        instance.distances.all().delete()
+        _task_calc_staging_system().delay(instance.pk)
 
 
 class DistancesFromStaging(models.Model):

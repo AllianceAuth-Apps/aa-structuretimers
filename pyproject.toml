@@ -7,18 +7,17 @@ name = "aa-structuretimers"
 dynamic = ["description", "version"]
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 authors = [{ name = "Erik Kalkoken", email = "kalkoken87@gmail.com" }]
 classifiers = [
     "Environment :: Web Environment",
     "Framework :: Django",
     "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.2",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -26,15 +25,18 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
 ]
 dependencies = [
-    "allianceauth-app-utils>=1.27",
-    "allianceauth>=4,<5",
-    "dhooks_lite>=1.0.0",
-    "django-eveuniverse>=0.16",
+    "allianceauth-app-utils>=1.31.0a1",
+    "allianceauth>=4,<6",
+    "dhooks_lite>=1.1",
+    "django-eveuniverse>=2.0.0a1",
     "django-multiselectfield",
-    "redis-simple-mq>=0.4",
-    "requests",
     "puremagic",
+    "redis-simple-mq>=1.1",
+    "requests",
 ]
+
+[project.optional-dependencies]
+test = ["coverage", "factory_boy", "django-webtest"]
 
 [project.urls]
 Homepage = "https://gitlab.com/ErikKalkoken/aa-structuretimers"
@@ -80,6 +82,7 @@ disable = [
     "too-many-arguments",
     "too-many-positional-arguments",
     "fixme",
+    "protected-access",
     # "redefined-builtin",
     # "too-many-instance-attributes",
 ]

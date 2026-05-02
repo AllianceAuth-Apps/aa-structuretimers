@@ -8,10 +8,15 @@ from app_utils.testing import NoSocketsTestCase
 from structuretimers.constants import EveTypeId
 from structuretimers.forms import TimerForm
 from structuretimers.models import Timer
+from structuretimers.tests.testdata.factory import (
+    CitadelTypeFactory,
+    EveSolarSystemLowSecFactory,
+    RefineryTypeFactory,
+    SkyhookTypeFactory,
+    UserWithAccessFactory,
+)
 
 from .testdata import test_image_filename
-from .testdata.factory import create_user
-from .testdata.fixtures import LoadTestDataMixin
 
 FORMS_PATH = "structuretimers.forms"
 MODELS_PATH = "structuretimers.models"
@@ -41,7 +46,15 @@ def create_form_data(**kwargs):
     return form_data
 
 
-class TestTimerFormIsValid(LoadTestDataMixin, NoSocketsTestCase):
+class TestTimerFormIsValid(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.system_abune = EveSolarSystemLowSecFactory(id=30004984, name="Abune")
+        cls.type_astrahus = CitadelTypeFactory(id=35832, name="Astrahus")
+        cls.type_athanor = RefineryTypeFactory(id=35835, name="Athanor")
+        SkyhookTypeFactory()
+
     def test_should_accept_normal_timer_with_date_parts(self):
         # given
         form_data = create_form_data(days_left=0, hours_left=3, minutes_left=30)
@@ -245,32 +258,36 @@ class TestTimerFormIsValid(LoadTestDataMixin, NoSocketsTestCase):
 
     def test_should_allow_theft_timer_for_skyhook_only(self):
         cases = [
-            (EveTypeId.ORBITAL_SKYHOOK.value, True),
-            (EveTypeId.ASTRAHUS.value, False),
-            (EveTypeId.CUSTOMS_OFFICE.value, False),
-            (EveTypeId.IHUB.value, False),
-            (EveTypeId.TCU.value, False),
+            ("skyhook", EveTypeId.ORBITAL_SKYHOOK.value, True),
+            ("citadel", EveTypeId.ASTRAHUS.value, False),
+            ("poco", EveTypeId.CUSTOMS_OFFICE.value, False),
+            ("ihub", EveTypeId.IHUB.value, False),
+            ("tcu", EveTypeId.TCU.value, False),
         ]
         for tc in cases:
-            with self.subTest(structure_type_id=tc[0]):
+            with self.subTest(name=tc[0]):
                 form_data = create_form_data(
                     days_left=0,
                     hours_left=3,
                     minutes_left=30,
                     timer_type=Timer.Type.THEFT,
-                    structure_type_2=tc[0],
+                    structure_type_2=tc[1],
                 )
                 form = TimerForm(data=form_data)
-                self.assertIs(form.is_valid(), tc[1])
+                self.assertIs(form.is_valid(), tc[2], form.errors)
 
 
 @patch(MODELS_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())
 @patch(MODELS_PATH + "._task_schedule_notifications_for_timer", Mock())
-class TestTimerFormSave(LoadTestDataMixin, NoSocketsTestCase):
+class TestTimerFormSave(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = create_user(cls.character_1)
+        cls.user = UserWithAccessFactory()
+        cls.system_abune = EveSolarSystemLowSecFactory(id=30004984, name="Abune")
+        cls.type_astrahus = CitadelTypeFactory(id=35832, name="Astrahus")
+        cls.type_athanor = RefineryTypeFactory(id=35835, name="Athanor")
+        SkyhookTypeFactory()
 
     def test_should_create_new_normal_timer(self):
         # given
