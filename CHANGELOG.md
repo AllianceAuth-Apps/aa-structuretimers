@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+## [3.0.0a1] - 2026-05-01
+
+## Changed
+
+- BREAKING CHANGE: Removed support for Python 3.8
+- BREAKING CHANGE: Removed support for Python 3.9
+- Added support for AA5
+- Migrated to new eveuniverse version that uses the OpenAPI client
+- Modernized test suite
+- Moved save logic for Timer, NotificationRule and StagingSystem into signals
+
 ## [2.1.0] - 2025-10-12
 
 ### Changed
