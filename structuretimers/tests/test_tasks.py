@@ -5,7 +5,6 @@ from celery import Task
 
 from django.test import TestCase, TransactionTestCase
 from django.utils.timezone import now
-from eveuniverse.models import EveSolarSystem, EveType
 
 from structuretimers.models import NotificationRule, ScheduledNotification, Timer
 from structuretimers.tasks import (
@@ -17,52 +16,58 @@ from structuretimers.tasks import (
     send_messages_for_webhook,
     send_scheduled_notification,
 )
-
-from .testdata.factory import (
-    create_discord_webhook,
-    create_notification_rule,
-    create_scheduled_notification,
-    create_staging_system,
-    create_timer,
+from structuretimers.tests.testdata.factory import (
+    DiscordWebhookFactory,
+    NotificationRuleFactory,
+    ScheduledNotificationFactory,
+    StagingSystemFactory,
+    TimerFactory,
 )
-from .testdata.fixtures import LoadTestDataMixin
-from .testdata.load_eveuniverse import load_eveuniverse
 
 MODULE_PATH = "structuretimers.tasks"
 
 
-class TestCaseBase(LoadTestDataMixin, TestCase):
-    @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    def setUp(self) -> None:
-        self.webhook = create_discord_webhook()
-        self.webhook.clear_queue()
-        self.rule = create_notification_rule(
-            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
-            scheduled_time=NotificationRule.MINUTES_15,
-            webhook=self.webhook,
-        )
-        self.timer = create_timer(
-            structure_name="Test_1",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=now() + dt.timedelta(minutes=30),
-        )
+# class TestCaseBase(TestCase):
+#     @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
+#     def setUp(self) -> None:
+#         webhook = DiscordWebhookFactory()
+#         webhook.clear_queue()
+#         rule = NotificationRuleFactory(
+#             trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
+#             scheduled_time=NotificationRule.MINUTES_15,
+#             webhook=webhook,
+#         )
+#         timer = TimerFactory(
+#             structure_name="Test_1",
+#             eve_solar_system=self.system_abune,
+#             structure_type=self.type_raitaru,
+#             date=now() + dt.timedelta(minutes=30),
+#         )
 
 
 @patch(MODULE_PATH + ".DiscordWebhook.send_queued_messages", spec=True)
 @patch(MODULE_PATH + ".logger", spec=True)
-class TestSendMessagesForWebhook(TestCaseBase):
+class TestSendMessagesForWebhook(TestCase):
     def test_normal(self, mock_logger, mock_send_queued_messages):
-        send_messages_for_webhook(self.webhook.pk)
+        # given
+        webhook = DiscordWebhookFactory()
+
+        # when
+        send_messages_for_webhook(webhook.pk)
+
+        # then
         self.assertEqual(mock_send_queued_messages.call_count, 1)
         self.assertEqual(mock_logger.info.call_count, 2)
         self.assertEqual(mock_logger.error.call_count, 0)
 
     def test_disabled_webhook(self, mock_logger, mock_send_queued_messages):
-        self.webhook.is_enabled = False
-        self.webhook.save()
+        # given
+        webhook = DiscordWebhookFactory(is_enabled=False)
 
-        send_messages_for_webhook(self.webhook.pk)
+        # when
+        send_messages_for_webhook(webhook.pk)
+
+        # then
         self.assertEqual(mock_send_queued_messages.call_count, 0)
         self.assertEqual(mock_logger.info.call_count, 1)
         self.assertEqual(mock_logger.error.call_count, 0)
@@ -70,148 +75,147 @@ class TestSendMessagesForWebhook(TestCaseBase):
 
 @patch(MODULE_PATH + ".notify_about_new_timer", spec=True)
 @patch(MODULE_PATH + ".send_scheduled_notification", spec=True)
-class TestScheduleNotificationForTimer(TestCaseBase):
-    def test_normal(self, mock_send_notification, mock_send_notification_for_timer):
-        """
-        given no notifications scheduled
-        when called for timer with matching notification rule
-        then schedules new notification
-        """
+class TestScheduleNotificationForTimer(TestCase):
+    def test_should_schedule_new_notification_for_time_reached(
+        self, mock_send_notification, mock_send_notification_for_timer
+    ):
+        # given
         mock_send_notification.apply_async.return_value.task_id = "my_task_id"
-
-        schedule_notifications_for_timer(timer_pk=self.timer.pk, is_new=True)
-
-        self.assertTrue(mock_send_notification.apply_async.called)
-        self.assertTrue(
-            self.timer.scheduled_notifications.filter(notification_rule=self.rule)
+        timer = TimerFactory()
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED
         )
+
+        # when
+        schedule_notifications_for_timer(timer_pk=timer.pk, is_new=True)
+
+        # then
+        self.assertTrue(mock_send_notification.apply_async.called)
+        self.assertTrue(timer.scheduled_notifications.filter(notification_rule=rule))
 
     def test_should_not_create_notification_for_preliminary_timer(
         self, mock_send_notification, mock_send_notification_for_timer
     ):
         # given
         mock_send_notification.apply_async.return_value.task_id = "my_task_id"
-        timer = create_timer(timer_type=Timer.Type.PRELIMINARY)
+        timer = TimerFactory(timer_type=Timer.Type.PRELIMINARY)
+        NotificationRuleFactory(trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED)
+
         # when/then
         with self.assertRaises(ValueError):
             schedule_notifications_for_timer(timer_pk=timer.pk, is_new=True)
 
-    def test_remove_old_notifications(
+    def test_should_remove_old_notifications(
         self, mock_send_notification, mock_send_notification_for_timer
     ):
-        """
-        given existing notification
-        when called for timer with matching notification rule and changed date
-        then deletes existing notification and schedules new notification
-        """
+        # given
         mock_send_notification.apply_async.return_value.task_id = "my_task_id"
-        notification_old = create_scheduled_notification(
-            timer=self.timer,
-            notification_rule=self.rule,
-            timer_date=self.timer.date + dt.timedelta(minutes=5),
-            notification_date=self.timer.date - dt.timedelta(minutes=5),
+        timer: Timer = TimerFactory()
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED
+        )
+        notification_old = ScheduledNotificationFactory(
+            timer=timer,
+            notification_rule=rule,
+            timer_date=timer.date + dt.timedelta(minutes=5),
+            notification_date=timer.date - dt.timedelta(minutes=5),
             celery_task_id="99",
         )
 
-        schedule_notifications_for_timer(timer_pk=self.timer.pk, is_new=True)
+        # when
+        schedule_notifications_for_timer(timer_pk=timer.pk, is_new=True)
 
+        # then
         self.assertTrue(mock_send_notification.apply_async.called)
         self.assertTrue(
-            self.timer.scheduled_notifications.filter(
-                notification_rule=self.rule
-            ).exists()
+            timer.scheduled_notifications.filter(notification_rule=rule).exists()
         )
         self.assertFalse(
             ScheduledNotification.objects.filter(pk=notification_old.pk).exists()
         )
 
-    def test_notification_for_new_timer(
+    def test_should_schedule_notification_for_new_timer(
         self, mock_send_notification, mock_send_notification_for_timer
     ):
-        """
-        given notification rule for sending new timers exists
-        when called for timer
-        then send new notification
-        """
-        self.rule.is_enabled = False
-        self.rule.save()
-        rule = create_notification_rule(
-            trigger=NotificationRule.Trigger.NEW_TIMER_CREATED, webhook=self.webhook
+        # given
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.NEW_TIMER_CREATED
         )
-        schedule_notifications_for_timer(timer_pk=self.timer.pk, is_new=True)
+        timer: Timer = TimerFactory()
 
+        # when
+        schedule_notifications_for_timer(timer_pk=timer.pk, is_new=True)
+
+        # then
         self.assertTrue(mock_send_notification_for_timer.apply_async.called)
         _, kwargs = mock_send_notification_for_timer.apply_async.call_args
-        self.assertEqual(kwargs["kwargs"]["timer_pk"], self.timer.pk)
+        self.assertEqual(kwargs["kwargs"]["timer_pk"], timer.pk)
         self.assertEqual(kwargs["kwargs"]["notification_rule_pk"], rule.pk)
 
     def test_no_notification_for_new_timer_if_no_rule(
         self, mock_send_notification, mock_send_notification_for_timer
     ):
-        """
-        given no notification rule for sending new timers exists
-        when called for timer
-        then no notification is sent
-        """
-        self.rule.is_enabled = False
-        self.rule.save()
-        schedule_notifications_for_timer(timer_pk=self.timer.pk, is_new=True)
+        # given
+        timer: Timer = TimerFactory()
 
+        # when
+        schedule_notifications_for_timer(timer_pk=timer.pk, is_new=True)
+
+        # then
         self.assertFalse(mock_send_notification_for_timer.apply_async.called)
 
     def test_should_abort_when_outdated(
         self, mock_send_notification, mock_send_notification_for_timer
     ):
         # given
-        self.timer.date = now() - dt.timedelta(hours=1)
-        self.timer.save()
+        timer: Timer = TimerFactory(date=now() - dt.timedelta(hours=1))
+
         # when
-        schedule_notifications_for_timer(timer_pk=self.timer.pk, is_new=True)
+        schedule_notifications_for_timer(timer_pk=timer.pk, is_new=True)
+
         # then
         self.assertFalse(mock_send_notification_for_timer.apply_async.called)
 
 
 @patch(MODULE_PATH + ".send_scheduled_notification", spec=True)
-class TestScheduleNotificationForRule(TestCaseBase):
-    def test_normal(self, mock_send_notification):
-        """
-        given no notifications scheduled
-        when called for notification rule with matching timer
-        then schedules new notification
-        """
+class TestScheduleNotificationForRule(TestCase):
+    def test_should_schedule_new_notification_when_rule_matches(
+        self, mock_send_notification
+    ):
+        # given
         mock_send_notification.apply_async.return_value.task_id = "my_task_id"
+        timer = TimerFactory()
+        rule = NotificationRuleFactory()
 
-        schedule_notifications_for_rule(self.rule.pk)
+        # when
+        schedule_notifications_for_rule(rule.pk)
 
+        # then
         self.assertTrue(mock_send_notification.apply_async.called)
         self.assertTrue(
-            self.timer.scheduled_notifications.filter(
-                notification_rule=self.rule
-            ).exists()
+            timer.scheduled_notifications.filter(notification_rule=rule).exists()
         )
 
-    def test_remove_old_notifications(self, mock_send_notification):
-        """
-        given existing notification
-        when called for notification rule with matching timer
-        then deletes existing notification and schedules new notification
-        """
+    def test_should_remove_old_notifications(self, mock_send_notification):
+        # given
+        timer: Timer = TimerFactory()
+        rule = NotificationRuleFactory()
         mock_send_notification.apply_async.return_value.task_id = "my_task_id"
-        notification_old = create_scheduled_notification(
-            timer=self.timer,
-            notification_rule=self.rule,
-            timer_date=self.timer.date + dt.timedelta(minutes=5),
-            notification_date=self.timer.date - dt.timedelta(minutes=5),
+        notification_old = ScheduledNotificationFactory(
+            timer=timer,
+            notification_rule=rule,
+            timer_date=timer.date + dt.timedelta(minutes=5),
+            notification_date=timer.date - dt.timedelta(minutes=5),
             celery_task_id="99",
         )
 
-        schedule_notifications_for_rule(self.rule.pk)
+        # when
+        schedule_notifications_for_rule(rule.pk)
 
+        # then
         self.assertTrue(mock_send_notification.apply_async.called)
         self.assertTrue(
-            self.timer.scheduled_notifications.filter(
-                notification_rule=self.rule
-            ).exists()
+            timer.scheduled_notifications.filter(notification_rule=rule).exists()
         )
         self.assertFalse(
             ScheduledNotification.objects.filter(pk=notification_old.pk).exists()
@@ -219,10 +223,13 @@ class TestScheduleNotificationForRule(TestCaseBase):
 
     def test_abort_when_has_the_wrong_trigger(self, mock_send_notification):
         # given
-        self.rule.trigger = NotificationRule.Trigger.NEW_TIMER_CREATED
-        self.rule.save()
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.NEW_TIMER_CREATED
+        )
+
         # when
-        schedule_notifications_for_rule(self.rule.pk)
+        schedule_notifications_for_rule(rule.pk)
+
         # then
         self.assertFalse(mock_send_notification.apply_async.called)
 
@@ -230,91 +237,101 @@ class TestScheduleNotificationForRule(TestCaseBase):
 @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
 @patch(MODULE_PATH + ".send_messages_for_webhook", spec=True)
 class TestSendScheduledNotification(TransactionTestCase):
-    @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    def setUp(self) -> None:
-        load_eveuniverse()
-        self.type_raitaru = EveType.objects.get(id=35825)
-        self.system_abune = EveSolarSystem.objects.get(id=30004984)
-        self.webhook = create_discord_webhook()
-        self.webhook.clear_queue()
-        self.rule = create_notification_rule(
+    def test_should_send_notification(self, mock_send_messages_for_webhook):
+        # given
+        rule = NotificationRuleFactory(
             trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
             scheduled_time=NotificationRule.MINUTES_15,
-            webhook=self.webhook,
         )
-        self.timer = create_timer(
+        timer = TimerFactory(
             structure_name="Test_1",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
             date=now() + dt.timedelta(minutes=30),
         )
-        ScheduledNotification.objects.all().delete()
-
-    def test_normal(self, mock_send_messages_for_webhook):
-        """
-        when this notification is correctly scheduled
-        then send the notification
-        """
-        scheduled_notification = create_scheduled_notification(
-            timer=self.timer,
-            notification_rule=self.rule,
+        scheduled_notification = ScheduledNotificationFactory(
+            timer=timer,
+            notification_rule=rule,
             celery_task_id="my-id-123",
             timer_date=now() + dt.timedelta(hours=1),
             notification_date=now() + dt.timedelta(minutes=30),
         )
         mock_task = Mock(spec=Task)
         mock_task.request.id = "my-id-123"
+
+        # when
         send_scheduled_notification_inner = (
             send_scheduled_notification.__wrapped__.__func__
         )
         send_scheduled_notification_inner(
             mock_task, scheduled_notification_pk=scheduled_notification.pk
         )
+
+        # then
         self.assertTrue(mock_send_messages_for_webhook.apply_async.called)
 
-    def test_revoked_notification(self, mock_send_messages_for_webhook):
-        """
-        when this is not the right task instance
-        then discard this notification
-        """
-        scheduled_notification = create_scheduled_notification(
-            timer=self.timer,
-            notification_rule=self.rule,
+    def test_should_revoked_notification_when_incorrect_task_instance(
+        self, mock_send_messages_for_webhook
+    ):
+        # given
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
+            scheduled_time=NotificationRule.MINUTES_15,
+        )
+        timer = TimerFactory(
+            structure_name="Test_1",
+            date=now() + dt.timedelta(minutes=30),
+        )
+        scheduled_notification = ScheduledNotificationFactory(
+            timer=timer,
+            notification_rule=rule,
             celery_task_id="my-id-123",
             timer_date=now() + dt.timedelta(hours=1),
             notification_date=now() + dt.timedelta(minutes=30),
         )
         mock_task = Mock(**{"request.id": "my-id-456"})
+
+        # when
         send_scheduled_notification_inner = (
             send_scheduled_notification.__wrapped__.__func__
         )
         send_scheduled_notification_inner(
             mock_task, scheduled_notification_pk=scheduled_notification.pk
         )
+
+        # then
         self.assertFalse(mock_send_messages_for_webhook.apply_async.called)
 
-    def test_rule_disabled(self, mock_send_messages_for_webhook):
-        """
-        when the notification rule for this scheduled notification is disabled
-        then discard notification
-        """
-        self.rule.is_enabled = False
-        self.rule.save()
-        scheduled_notification = create_scheduled_notification(
-            timer=self.timer,
-            notification_rule=self.rule,
+    def test_discard_notification_when_rule_disabled(
+        self, mock_send_messages_for_webhook
+    ):
+        # given
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
+            scheduled_time=NotificationRule.MINUTES_15,
+            is_enabled=False,
+        )
+        timer = TimerFactory(
+            structure_name="Test_1",
+            date=now() + dt.timedelta(minutes=30),
+        )
+        scheduled_notification = ScheduledNotificationFactory(
+            timer=timer,
+            notification_rule=rule,
             celery_task_id="my-id-123",
             timer_date=now() + dt.timedelta(hours=1),
             notification_date=now() + dt.timedelta(minutes=30),
         )
         mock_task = Mock(spec=Task)
         mock_task.request.id = "my-id-123"
+
+        # when
         send_scheduled_notification_inner = (
             send_scheduled_notification.__wrapped__.__func__
         )
         send_scheduled_notification_inner(
             mock_task, scheduled_notification_pk=scheduled_notification.pk
         )
+
+        # then
         self.assertFalse(mock_send_messages_for_webhook.apply_async.called)
 
     def test_should_ignore_when_notification_was_deleted(
@@ -323,34 +340,47 @@ class TestSendScheduledNotification(TransactionTestCase):
         # given
         mock_task = Mock(spec=Task)
         mock_task.request.id = "my-id-123"
+
+        # when
         send_scheduled_notification_inner = (
             send_scheduled_notification.__wrapped__.__func__
         )
-        # when
         send_scheduled_notification_inner(mock_task, scheduled_notification_pk=666)
+
         # then
         self.assertFalse(mock_send_messages_for_webhook.apply_async.called)
 
     def test_should_abort_when_webhook_disabled(self, mock_send_messages_for_webhook):
         # given
-        scheduled_notification = create_scheduled_notification(
-            timer=self.timer,
-            notification_rule=self.rule,
+        webhook = DiscordWebhookFactory(is_enabled=False)
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
+            scheduled_time=NotificationRule.MINUTES_15,
+            is_enabled=False,
+            webhook=webhook,
+        )
+        timer = TimerFactory(
+            structure_name="Test_1",
+            date=now() + dt.timedelta(minutes=30),
+        )
+        scheduled_notification = ScheduledNotificationFactory(
+            timer=timer,
+            notification_rule=rule,
             celery_task_id="my-id-123",
             timer_date=now() + dt.timedelta(hours=1),
             notification_date=now() + dt.timedelta(minutes=30),
         )
         mock_task = Mock(spec=Task)
         mock_task.request.id = "my-id-123"
+
+        # when
         send_scheduled_notification_inner = (
             send_scheduled_notification.__wrapped__.__func__
         )
-        self.webhook.is_enabled = False
-        self.webhook.save()
-        # when
         send_scheduled_notification_inner(
             mock_task, scheduled_notification_pk=scheduled_notification.pk
         )
+
         # then
         self.assertFalse(mock_send_messages_for_webhook.apply_async.called)
 
@@ -358,101 +388,82 @@ class TestSendScheduledNotification(TransactionTestCase):
         self, mock_send_messages_for_webhook
     ):
         # given
-        self.timer.date = now() - dt.timedelta(hours=1)
-        self.timer.save()
-        scheduled_notification = create_scheduled_notification(
-            timer=self.timer,
-            notification_rule=self.rule,
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
+            scheduled_time=NotificationRule.MINUTES_15,
+            is_enabled=False,
+        )
+        timer = TimerFactory(
+            structure_name="Test_1", date=now() - dt.timedelta(hours=1)
+        )
+        scheduled_notification = ScheduledNotificationFactory(
+            timer=timer,
+            notification_rule=rule,
             celery_task_id="my-id-123",
             timer_date=now() + dt.timedelta(hours=1),
             notification_date=now() + dt.timedelta(minutes=30),
         )
         mock_task = Mock(spec=Task)
         mock_task.request.id = "my-id-123"
-        send_scheduled_notification_inner = (
-            send_scheduled_notification.__wrapped__.__func__
-        )
-        # when
-        send_scheduled_notification_inner(
-            mock_task, scheduled_notification_pk=scheduled_notification.pk
-        )
-        # then
-        self.assertFalse(mock_send_messages_for_webhook.apply_async.called)
 
-    def test_should_discard_when_timer_date_is_outdated(
-        self, mock_send_messages_for_webhook
-    ):
-        # given
-        self.timer.save()
-        scheduled_notification = create_scheduled_notification(
-            timer=self.timer,
-            notification_rule=self.rule,
-            celery_task_id="my-id-123",
-            timer_date=now() - dt.timedelta(hours=1),
-            notification_date=now() + dt.timedelta(minutes=30),
-        )
-        mock_task = Mock(spec=Task)
-        mock_task.request.id = "my-id-123"
+        # when
         send_scheduled_notification_inner = (
             send_scheduled_notification.__wrapped__.__func__
         )
-        # when
         send_scheduled_notification_inner(
             mock_task, scheduled_notification_pk=scheduled_notification.pk
         )
+
         # then
         self.assertFalse(mock_send_messages_for_webhook.apply_async.called)
 
 
 @patch(MODULE_PATH + ".send_messages_for_webhook", spec=True)
-class TestSendNotificationForTimer(TestCaseBase):
-    def test_normal(self, mock_send_messages_for_webhook):
-        """
-        given rule for notifying about new timers exist
-        when calling task for a timer
-        then send notification for that timer
-        """
+class TestNotifyAboutNewTimer(TestCase):
+    def test_should_notify_about_new_timer(self, mock_send_messages_for_webhook):
         # given
-        rule = create_notification_rule(
-            trigger=NotificationRule.Trigger.NEW_TIMER_CREATED, webhook=self.webhook
+        webhook = DiscordWebhookFactory()
+        timer = TimerFactory()
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.NEW_TIMER_CREATED, webhook=webhook
         )
+
         # when
-        notify_about_new_timer(self.timer.pk, rule.pk)
+        notify_about_new_timer(timer.pk, rule.pk)
+
         # then
         self.assertTrue(mock_send_messages_for_webhook.apply_async.called)
         _, kwargs = mock_send_messages_for_webhook.apply_async.call_args
-        self.assertListEqual(kwargs["args"], [self.webhook.pk])
+        self.assertListEqual(kwargs["args"], [webhook.pk])
 
-    def test_webhook_disabled(self, mock_send_messages_for_webhook):
-        """
-        given rule for notifying about new timers does NOT exist
-        when calling task for a timer
-        then send notification for that timer
-        """
+    def test_should_notify_about_timer_when_rule_does_not_exist(
+        self, mock_send_messages_for_webhook
+    ):
         # given
-        rule = create_notification_rule(
-            trigger=NotificationRule.Trigger.NEW_TIMER_CREATED, webhook=self.webhook
+        webhook = DiscordWebhookFactory()
+        timer: Timer = TimerFactory()
+        rule = NotificationRuleFactory(
+            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED, webhook=webhook
         )
+
         # when
-        notify_about_new_timer(self.timer.pk, rule.pk)
+        notify_about_new_timer(timer.pk, rule.pk)
+
         # then
         self.assertTrue(mock_send_messages_for_webhook.apply_async.called)
         _, kwargs = mock_send_messages_for_webhook.apply_async.call_args
-        self.assertListEqual(kwargs["args"], [self.webhook.pk])
+        self.assertListEqual(kwargs["args"], [webhook.pk])
 
-    def test_rule_disabled(self, mock_send_messages_for_webhook):
-        """
-        when is disabled
-        then abort
-        """
+    def test_should_abort_when_rule_disabled(self, mock_send_messages_for_webhook):
         # given
-        rule = create_notification_rule(
+        timer = TimerFactory()
+        rule = NotificationRuleFactory(
             trigger=NotificationRule.Trigger.NEW_TIMER_CREATED,
-            webhook=self.webhook,
             is_enabled=False,
         )
         # when
-        notify_about_new_timer(self.timer.pk, rule.pk)
+        notify_about_new_timer(timer.pk, rule.pk)
+
         # then
         self.assertFalse(mock_send_messages_for_webhook.apply_async.called)
 
@@ -472,16 +483,12 @@ class TestHousekeeping(TestCase):
 class TestTimerDistancesForAllStagingSystems(TestCase):
     def test_should_calc_distances(self, mock_calc_timer_distances_for_staging_system):
         # given
-        load_eveuniverse()
-        timer = create_timer(
-            structure_name="Test_1",
-            eve_solar_system=EveSolarSystem.objects.get(name="Abune"),
-            structure_type=EveType.objects.get(name="Astrahus"),
-            date=now() + dt.timedelta(minutes=30),
-        )
-        create_staging_system(light_years=10)
+        timer = TimerFactory(date=now() + dt.timedelta(minutes=30))
+        StagingSystemFactory()
+
         # when
         calc_timer_distances_for_all_staging_systems(timer.pk)
+
         # then
         self.assertEqual(
             mock_calc_timer_distances_for_staging_system.apply_async.call_count, 1

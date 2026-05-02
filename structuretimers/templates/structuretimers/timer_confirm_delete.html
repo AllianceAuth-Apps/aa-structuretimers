@@ -1,21 +1,20 @@
-{% extends "allianceauth/base.html" %}
+{% extends "structuretimers/base.html" %}
+{% load django_bootstrap5 %}
 {% load i18n %}
 
-{% block page_title %}{% translate "Delete Timer" %}{% endblock page_title %}
-
 {% block content %}
-    <div class="col-md-8 col-md-offset-2">
-        <h1 class="page-header text-center">
-            {% translate "Delete Structure Timer" %}
-        </h1>
-        <div class="container-fluid">
-            <div class="row">
+    <div class="row">
+    <div class="col col-lg-8">
+        <div class="card card-default">
+            <div class="card-body">
+                <h5 class="card-title">{% translate "Delete Structure Timer" %}</h5>
                 <form action="" method="post" id="confirm-delete-form">
                     {% csrf_token %}
-                    <p>
-                        {% trans "Are you sure you want to delete timer this timer?" %}
+                    {% bootstrap_form form %}
+                    <p class="card-text">
+                        {% trans "Are you sure you want to delete this timer?" %}
                     </p>
-                    <p>
+                    <p class="card-text">
                         <strong>{{ object }}</strong>
                     </p>
                     <input class="btn btn-danger" type="submit" value="{% translate 'Delete' %}" />
