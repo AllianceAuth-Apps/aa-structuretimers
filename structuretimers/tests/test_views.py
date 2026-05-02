@@ -1,158 +1,177 @@
-from datetime import timedelta
-from json.decoder import JSONDecodeError
-from typing import Optional
-from unittest import skipIf
-from unittest.mock import Mock, patch
+import datetime as dt
+from http import HTTPStatus
+from typing import Optional, Set
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.timezone import now
 
+from app_utils.testdata_factories import (
+    EveAllianceInfoFactory,
+    EveCharacterFactory,
+    EveCorporationInfoFactory,
+)
 from app_utils.testing import (
-    create_user_from_evecharacter,
+    NoSocketsTestCase,
     json_response_to_dict,
     json_response_to_python,
 )
 
 from structuretimers.models import Timer
-
-from .testdata.factory import create_staging_system, create_timer, create_user
-from .testdata.fixtures import LoadTestDataMixin
-from .utils import _is_aa4, add_permission_to_user_by_name
+from structuretimers.tests.testdata.factory import (
+    CitadelTypeFactory,
+    DistancesFromStagingFactory,
+    EveSolarSystemFactory,
+    StagingSystemFactory,
+    TimerFactory,
+    UserMainFactory,
+    UserWithAccessFactory,
+    UserWithManageFactory,
+)
 
 MODELS_PATH = "structuretimers.models"
 
 
-@patch(MODELS_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-class TestViewBase(LoadTestDataMixin, TestCase):
+class TestViewBase(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        # user
-        cls.user_1 = create_user(cls.character_1)
-        cls.user_2 = create_user(cls.character_2)
-        cls.user_2 = add_permission_to_user_by_name(
-            "structuretimers.manage_timer", cls.user_2
+        cls.user_1 = UserWithAccessFactory()
+        cls.user_2 = UserWithManageFactory()
+        cls.user_3 = UserWithAccessFactory()
+
+        cls.timer_1 = TimerFactory(
+            structure_name="Timer 1",
+            location_details="Near the star",
+            date=now() + dt.timedelta(hours=4),
+            eve_character=cls.character_1,
+            eve_corporation=cls.corporation_1,
+            user=cls.user_1,
+            eve_solar_system=cls.system_abune,
+            structure_type=cls.type_astrahus,
+            owner_name="Big Boss",
+            details_image_url="http://www.example.com/dummy.png",
+            details_notes="Some notes",
         )
-        cls.user_3 = create_user(cls.character_3)
-        # timers
-        with patch(MODELS_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False):
-            cls.timer_1 = create_timer(
-                structure_name="Timer 1",
-                location_details="Near the star",
-                date=now() + timedelta(hours=4),
-                eve_character=cls.character_1,
-                eve_corporation=cls.corporation_1,
-                user=cls.user_1,
-                eve_solar_system=cls.system_abune,
-                structure_type=cls.type_astrahus,
-                owner_name="Big Boss",
-                details_image_url="http://www.example.com/dummy.png",
-                details_notes="Some notes",
-            )
-            cls.timer_2 = create_timer(
-                structure_name="Timer 2",
-                date=now() - timedelta(hours=8),
-                eve_character=cls.character_1,
-                eve_corporation=cls.corporation_1,
-                user=cls.user_1,
-                eve_solar_system=cls.system_abune,
-                structure_type=cls.type_raitaru,
-                is_important=True,
-            )
-            cls.timer_3 = create_timer(
-                structure_name="Timer 3",
-                date=now() - timedelta(hours=8),
-                eve_character=cls.character_1,
-                eve_corporation=cls.corporation_1,
-                user=cls.user_1,
-                eve_solar_system=cls.system_enaluri,
-                structure_type=cls.type_astrahus,
-            )
-            cls.timer_4 = create_timer(
-                timer_type=Timer.Type.PRELIMINARY,
-                structure_name="Timer 4",
-                eve_character=cls.character_1,
-                eve_corporation=cls.corporation_1,
-                user=cls.user_1,
-            )
+        cls.timer_2 = TimerFactory(
+            structure_name="Timer 2",
+            date=now() - dt.timedelta(hours=8),
+            eve_character=cls.character_1,
+            eve_corporation=cls.corporation_1,
+            user=cls.user_1,
+            eve_solar_system=cls.system_abune,
+            structure_type=cls.type_raitaru,
+            is_important=True,
+        )
+        cls.timer_3 = TimerFactory(
+            structure_name="Timer 3",
+            date=now() - dt.timedelta(hours=8),
+            eve_character=cls.character_1,
+            eve_corporation=cls.corporation_1,
+            user=cls.user_1,
+            eve_solar_system=cls.system_enaluri,
+            structure_type=cls.type_astrahus,
+        )
+        cls.timer_4 = TimerFactory(
+            timer_type=Timer.Type.PRELIMINARY,
+            structure_name="Timer 4",
+            eve_character=cls.character_1,
+            eve_corporation=cls.corporation_1,
+            user=cls.user_1,
+        )
 
 
-class TestListViewWithSelectedStagingSystem(TestViewBase):
+class TestTimerList_SelectedStagingSystem(NoSocketsTestCase):
     def test_should_open_with_main_staging_system(self):
         # given
-        create_staging_system(eve_solar_system=self.system_abune)
-        staging_system = create_staging_system(
-            eve_solar_system=self.system_enaluri, is_main=True
-        )
-        self.client.force_login(self.user_1)
+        StagingSystemFactory()
+        staging_system = StagingSystemFactory(is_main=True)
+        self.client.force_login(UserWithAccessFactory())
+
         # when
         response = self.client.get("/structuretimers/")
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(
             response.context_data["selected_staging_system"], staging_system
         )
 
-    def test_should_open_with_first_staging_system(self):
+    def test_should_open_with_first_staging_system_when_there_is_no_main(self):
         # given
-        staging_system = create_staging_system(eve_solar_system=self.system_enaluri)
-        create_staging_system(eve_solar_system=self.system_abune)
-        self.client.force_login(self.user_1)
+        staging_system = StagingSystemFactory()
+        StagingSystemFactory()
+        self.client.force_login(UserWithAccessFactory())
+
         # when
         response = self.client.get("/structuretimers/")
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(
             response.context_data["selected_staging_system"], staging_system
         )
 
     def test_should_open_without_staging_system(self):
         # given
-        self.client.force_login(self.user_1)
+        self.client.force_login(UserWithAccessFactory())
+
         # when
         response = self.client.get("/structuretimers/")
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertIsNone(response.context_data["selected_staging_system"])
 
     def test_should_ignore_wrong_staging_system_name(self):
         # given
-        staging_system = create_staging_system(is_main=True)
-        self.client.force_login(self.user_1)
+        staging_system = StagingSystemFactory(is_main=True)
+        self.client.force_login(UserWithAccessFactory())
+
         # when
         response = self.client.get("/structuretimers/?staging=invalid_name")
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(
             response.context_data["selected_staging_system"], staging_system
         )
 
     def test_should_handle_multiple_invalid_staging_systems(self):
         # given
-        create_staging_system(eve_solar_system=None)
-        create_staging_system(eve_solar_system=None)
-        self.client.force_login(self.user_1)
+        StagingSystemFactory(eve_solar_system=None)
+        StagingSystemFactory(eve_solar_system=None)
+        self.client.force_login(UserWithAccessFactory())
+
         # when
         response = self.client.get("/structuretimers/")
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertIsNone(response.context_data["selected_staging_system"])
 
     def test_should_handle_multiple_invalid_staging_systems_with_main(self):
         # given
-        create_staging_system(eve_solar_system=None, is_main=True)
-        create_staging_system(eve_solar_system=None)
-        self.client.force_login(self.user_1)
+        StagingSystemFactory(eve_solar_system=None, is_main=True)
+        StagingSystemFactory(eve_solar_system=None)
+        self.client.force_login(UserWithAccessFactory())
+
         # when
         response = self.client.get("/structuretimers/")
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertIsNone(response.context_data["selected_staging_system"])
 
 
-class TestListData(TestViewBase):
+def json_response_pks(response: HttpResponse) -> Set[int]:
+    return set(json_response_to_dict(response).keys())
+
+
+class TestTimerListData(NoSocketsTestCase):
+    view_name = "structuretimers:timer_list_data"
+
     def _get_timer_list_data(
         self, tab_name: str = "current", user: Optional[User] = None
     ):
@@ -167,376 +186,293 @@ class TestListData(TestViewBase):
         self, tab_name: str = "current", user: Optional[User] = None
     ) -> set:
         response = self._get_timer_list_data(tab_name, user)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         return set(json_response_to_dict(response).keys())
 
     # def test_timer_list_view_loads(self):
     #     request = self.factory.get(reverse("structuretimers:timer_list"))
     #     request.user = self.user_1
     #     response = views.timer_list(request)
-    #     self.assertEqual(response.status_code, 200)
+    #     self.assertEqual(response.status_code, HTTPStatus.OK)
 
-    def test_return_current_timers(self):
+    def test_should_return_current_timers(self):
+        # given
+        timer = TimerFactory()
+        TimerFactory(date=now() - dt.timedelta(hours=8))
+        self.client.force_login(UserWithAccessFactory())
+
         # when
-        timer_ids = self._get_timer_list_data_ids("current")
-        # then
-        self.assertSetEqual(timer_ids, {self.timer_1.id})
+        response = self.client.get(reverse(self.view_name, args=["current"]))
 
-    def test_return_past_timers(self):
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertSetEqual(json_response_pks(response), {timer.id})
+
+    def test_should_return_past_timers(self):
+        # given
+        TimerFactory()
+        timer = TimerFactory(date=now() - dt.timedelta(hours=8))
+        self.client.force_login(UserWithAccessFactory())
+
         # when
-        timer_ids = self._get_timer_list_data_ids("past")
-        # then
-        self.assertSetEqual(timer_ids, {self.timer_2.id, self.timer_3.id})
+        response = self.client.get(reverse(self.view_name, args=["past"]))
 
-    def test_return_preliminary_timers(self):
+        # then
+        self.assertSetEqual(json_response_pks(response), {timer.id})
+
+    def test_should_return_preliminary_timers(self):
+        # given
+        TimerFactory()
+        timer = TimerFactory(timer_type=Timer.Type.PRELIMINARY)
+        self.client.force_login(UserWithAccessFactory())
+
         # when
-        timer_ids = self._get_timer_list_data_ids("preliminary")
-        # then
-        self.assertSetEqual(timer_ids, {self.timer_4.id})
+        response = self.client.get(reverse(self.view_name, args=["preliminary"]))
 
-    @skipIf(_is_aa4, "test is not compatible with AA4")
+        # then
+        self.assertSetEqual(json_response_pks(response), {timer.id})
+
     def test_should_not_give_access_without_basic_permission(self):
         # given
-        user, _ = create_user_from_evecharacter(1003)
-        self.client.force_login(user)
+        TimerFactory()
+        self.client.force_login(UserMainFactory())
+
         # when
-        response = self.client.get(
-            reverse("structuretimers:timer_list_data", args=["current"])
-        )
+        response = self.client.get(reverse(self.view_name, args=["current"]))
+
         # then
-        with self.assertRaises(JSONDecodeError):
-            json_response_to_python(response)  # TODO: Change to checking http code
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
 
-    def test_show_corp_restricted_to_corp_member(self):
-        timer_4 = create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_1,
-            eve_corporation=self.corporation_1,
-            user=self.user_2,
-            visibility=Timer.Visibility.CORPORATION,
+    def test_should_return_corp_restricted_for_corp_member_only(self):
+        # given
+        user = UserWithAccessFactory()
+        ec = EveCorporationInfoFactory(
+            corporation_id=user.profile.main_character.corporation_id
         )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id, timer_4.id}
-        self.assertSetEqual(timer_ids, expected)
+        timer = TimerFactory(
+            visibility=Timer.Visibility.CORPORATION, eve_corporation=ec
+        )
+        TimerFactory(visibility=Timer.Visibility.CORPORATION)
+        self.client.force_login(user)
 
-    def test_dont_show_corp_restricted_to_non_corp_member(self):
-        create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_corporation=self.corporation_3,
-            user=self.user_3,
-            visibility=Timer.Visibility.CORPORATION,
-        )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id}
-        self.assertSetEqual(timer_ids, expected)
+        # when
+        response = self.client.get(reverse(self.view_name, args=["current"]))
+
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertSetEqual(json_response_pks(response), {timer.id})
 
     def test_show_alliance_restricted_to_alliance_member(self):
-        timer_4 = create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_1,
-            eve_corporation=self.corporation_1,
-            eve_alliance=self.alliance_1,
-            user=self.user_2,
-            visibility=Timer.Visibility.ALLIANCE,
+        # given
+        corp = EveCorporationInfoFactory(create_alliance=True)
+        ec = EveCharacterFactory(
+            corporation_id=corp.corporation_id, alliance_id=corp.alliance.alliance_id
         )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id, timer_4.id}
-        self.assertSetEqual(timer_ids, expected)
+        user = UserWithAccessFactory(main_character__character=ec)
+        timer = TimerFactory(
+            visibility=Timer.Visibility.ALLIANCE, eve_alliance=corp.alliance
+        )
+        TimerFactory(visibility=Timer.Visibility.ALLIANCE)
+        self.client.force_login(user)
 
-    def test_dont_show_alliance_restricted_to_non_alliance_member(self):
-        create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_corporation=self.corporation_3,
-            eve_alliance=self.alliance_3,
-            user=self.user_3,
-            visibility=Timer.Visibility.ALLIANCE,
-        )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id}
-        self.assertSetEqual(timer_ids, expected)
+        # when
+        response = self.client.get(reverse(self.view_name, args=["current"]))
 
-    def test_show_opsec_restricted_to_opsec_member(self):
-        self.user_1 = add_permission_to_user_by_name(
-            "structuretimers.opsec_access", self.user_1
-        )
-        timer_4 = create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_corporation=self.corporation_3,
-            user=self.user_3,
-            is_opsec=True,
-        )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id, timer_4.id}
-        self.assertSetEqual(timer_ids, expected)
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertSetEqual(json_response_pks(response), {timer.id})
 
-    def test_dont_show_opsec_restricted_to_non_opsec_member(self):
-        create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_corporation=self.corporation_3,
-            user=self.user_3,
-            is_opsec=True,
+    def test_should_show_opsec_restricted__when_user_has_opsec_permission(self):
+        # given
+        user = UserMainFactory(
+            permissions__=[
+                "structuretimers.basic_access",
+                "structuretimers.opsec_access",
+            ]
         )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id}
-        self.assertSetEqual(timer_ids, expected)
+        timer = TimerFactory(is_opsec=True)
+        self.client.force_login(user)
 
-    def test_dont_show_opsec_corp_restricted_to_opsec_member_other_corp(self):
-        self.user_1 = add_permission_to_user_by_name(
-            "structuretimers.opsec_access", self.user_1
+        # when
+        response = self.client.get(reverse(self.view_name, args=["current"]))
+
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertSetEqual(json_response_pks(response), {timer.id})
+
+    def test_should_not_show_opsec_restricted__when_user_not_has_opsec_permission(self):
+        # given
+        user = UserMainFactory(
+            permissions__=[
+                "structuretimers.basic_access",
+            ]
         )
-        create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_corporation=self.corporation_3,
-            user=self.user_3,
-            is_opsec=True,
+        TimerFactory(is_opsec=True)
+        self.client.force_login(user)
+
+        # when
+        response = self.client.get(reverse(self.view_name, args=["current"]))
+
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertSetEqual(json_response_pks(response), set())
+
+    def test_should_return_corp_timer_to_creator_when_in_different_corp(self):
+        # given
+        user = UserWithAccessFactory()
+        timer = TimerFactory(
             visibility=Timer.Visibility.CORPORATION,
+            eve_corporation=EveCorporationInfoFactory(),
+            user=user,
         )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id}
-        self.assertSetEqual(timer_ids, expected)
+        self.client.force_login(user)
 
-    def test_show_corp_timer_to_creator_of_different_corp(self):
-        timer_4 = create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_corporation=self.corporation_3,
-            visibility=Timer.Visibility.CORPORATION,
-            user=self.user_1,
-        )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id, timer_4.id}
-        self.assertSetEqual(timer_ids, expected)
+        # when
+        response = self.client.get(reverse(self.view_name, args=["current"]))
 
-    def test_show_alliance_timer_to_creator_of_different_alliance(self):
-        timer_4 = create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_alliance=self.alliance_3,
-            eve_corporation=self.corporation_3,
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertSetEqual(json_response_pks(response), {timer.id})
+
+    def test_should_return_corp_timer_to_creator_when_in_different_alliance(self):
+        # given
+        user = UserWithAccessFactory()
+        timer = TimerFactory(
             visibility=Timer.Visibility.ALLIANCE,
-            user=self.user_1,
+            eve_alliance=EveAllianceInfoFactory(),
+            user=user,
         )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id, timer_4.id}
-        self.assertSetEqual(timer_ids, expected)
+        self.client.force_login(user)
 
-    def test_can_show_timers_without_user_character_corporation_or_alliance(self):
-        timer_4 = create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-        )
-        timer_ids = self._get_timer_list_data_ids()
-        expected = {self.timer_1.id, timer_4.id}
-        self.assertSetEqual(timer_ids, expected)
+        # when
+        response = self.client.get(reverse(self.view_name, args=["current"]))
 
-    def test_list_for_manager(self):
-        timer_ids = self._get_timer_list_data_ids(user=self.user_2)
-        expected = {self.timer_1.id}
-        self.assertSetEqual(timer_ids, expected)
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertSetEqual(json_response_pks(response), {timer.id})
 
     def test_should_include_distances_1(self):
         # given
-        timer = create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_alliance=self.alliance_3,
-            eve_corporation=self.corporation_3,
-            user=self.user_1,
-        )
-        staging_system = create_staging_system(
-            eve_solar_system=self.system_enaluri,
-            light_years=1.2,
-            jumps=3,
-        )
-        self.client.force_login(self.user_1)
+        timer = TimerFactory()
+        distances = DistancesFromStagingFactory(timer=timer, light_years=1.2, jumps=3)
+        self.client.force_login(UserWithAccessFactory())
+
         # when
         response = self.client.get(
-            reverse("structuretimers:timer_list_data", args=["current"])
-            + f"?staging={staging_system.pk}"
+            reverse(self.view_name, args=["current"])
+            + f"?staging={distances.staging_system.pk}"
         )
+
         # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         data = json_response_to_dict(response)
         obj = data[timer.id]
         self.assertEqual(obj["distance_light_years"], 1.2)
         self.assertEqual(obj["distance_jumps"], 3)
         self.assertTrue(obj["distance"])
 
-    def test_should_not_include_distances_1(self):
-        # given
-        timer = create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_alliance=self.alliance_3,
-            eve_corporation=self.corporation_3,
-            user=self.user_1,
-        )
-        create_staging_system(
-            eve_solar_system=self.system_enaluri, light_years=1.2, jumps=3, is_main=True
-        )
-        self.client.force_login(self.user_1)
-        # when
-        response = self.client.get(
-            reverse("structuretimers:timer_list_data", args=["current"])
-        )
-        # then
-        data = json_response_to_dict(response)
-        obj = data[timer.id]
-        self.assertIsNone(obj["distance_light_years"])
-        self.assertIsNone(obj["distance_jumps"])
 
-    def test_should_not_include_distances_2(self):
-        # given
-        timer = create_timer(
-            structure_name="Timer 4",
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now() + timedelta(hours=8),
-            eve_character=self.character_3,
-            eve_alliance=self.alliance_3,
-            eve_corporation=self.corporation_3,
-            user=self.user_1,
-        )
-        staging_system = create_staging_system(eve_solar_system=self.system_enaluri)
-        self.client.force_login(self.user_1)
-        # when
-        response = self.client.get(
-            reverse("structuretimers:timer_list_data", args=["current"])
-            + f"?staging={staging_system.pk}"
-        )
-        # then
-        data = json_response_to_dict(response)
-        obj = data[timer.id]
-        self.assertIsNone(obj["distance_light_years"])
-        self.assertIsNone(obj["distance_jumps"])
+class TestDetailView(NoSocketsTestCase):
+    view_name = "structuretimers:detail"
 
-
-@patch(MODELS_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())
-class TestDetailView(TestViewBase):
-    def test_should_return_normal_timer(self):
+    def test_should_show_normal_timer(self):
         # given
-        self.client.force_login(self.user_1)
-        # when
-        response = self.client.get(
-            reverse("structuretimers:detail", args=[self.timer_1.pk])
-        )
-        # then
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Timer 1", response.rendered_content)
+        timer = TimerFactory(structure_name="Alpha")
+        self.client.force_login(UserWithAccessFactory())
 
-    def test_should_return_preliminary_timer(self):
-        # given
-        self.client.force_login(self.user_1)
         # when
-        response = self.client.get(
-            reverse("structuretimers:detail", args=[self.timer_4.pk])
-        )
+        response = self.client.get(reverse(self.view_name, args=[timer.pk]))
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertTemplateUsed(response, "structuretimers/timer_detail.html")
-        self.assertIn("Timer 4", response.rendered_content)
+        self.assertIn("Alpha", response.rendered_content)
 
-    @skipIf(_is_aa4, "test is not compatible with AA4")
-    def test_forbidden(self):
+    def test_should_show_preliminary_timer(self):
         # given
-        self.client.force_login(self.user_1)
-        self.timer_1.is_opsec = True
-        self.timer_1.save()
+        timer = TimerFactory(structure_name="Alpha", timer_type=Timer.Type.PRELIMINARY)
+        self.client.force_login(UserWithAccessFactory())
+
         # when
-        response = self.client.get(
-            reverse("structuretimers:detail", args=[self.timer_1.pk])
-        )
+        response = self.client.get(reverse(self.view_name, args=[timer.pk]))
+
         # then
-        self.assertTemplateNotUsed(
-            response, "structuretimers/timer_detail.html"
-        )  # TODO: Change to test for status code
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(response, "structuretimers/timer_detail.html")
+        self.assertIn("Alpha", response.rendered_content)
+
+    def test_should_not_show_details_when_no_access(self):
+        # given
+        timer = TimerFactory(structure_name="Alpha", is_opsec=True)
+        self.client.force_login(UserWithAccessFactory())
+
+        # when
+        response = self.client.get(reverse("structuretimers:detail", args=[timer.pk]))
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
 
-class TestSelect2Views(LoadTestDataMixin, TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.user_1 = create_user(cls.character_1)
+class TestSelect2Views_SolarSystems(NoSocketsTestCase):
+    view_name = "structuretimers:select2_solar_systems"
 
     def test_should_return_solar_systems(self):
         # given
-        self.client.force_login(self.user_1)
+        EveSolarSystemFactory(id=30004984, name="Abune")
+        EveSolarSystemFactory()
+        self.client.force_login(UserWithAccessFactory())
+
         # when
-        response = self.client.get(
-            reverse("structuretimers:select2_solar_systems"), data={"term": "abu"}
-        )
+        response = self.client.get(reverse(self.view_name), data={"term": "abu"})
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         data = json_response_to_python(response)
         self.assertEqual(data, {"results": [{"id": 30004984, "text": "Abune"}]})
 
     def test_should_return_empty_solar_system_list(self):
         # given
-        self.client.force_login(self.user_1)
+        EveSolarSystemFactory(id=30004984, name="Abune")
+        EveSolarSystemFactory()
+        self.client.force_login(UserWithAccessFactory())
+
         # when
-        response = self.client.get(reverse("structuretimers:select2_solar_systems"))
+        response = self.client.get(reverse(self.view_name))
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         data = json_response_to_python(response)
         self.assertEqual(data, {"results": None})
 
+
+class TestSelect2Views_StructureTypes(NoSocketsTestCase):
+    view_name = "structuretimers:select2_structure_types"
+
     def test_should_return_structure_types(self):
         # given
-        self.client.force_login(self.user_1)
+        CitadelTypeFactory(id=35832, name="Astrahus")
+        CitadelTypeFactory()
+        self.client.force_login(UserWithAccessFactory())
+
         # when
         response = self.client.get(
             reverse("structuretimers:select2_structure_types"), data={"term": "ast"}
         )
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         data = json_response_to_python(response)
         self.assertEqual(data, {"results": [{"id": 35832, "text": "Astrahus"}]})
 
     def test_should_return_empty_structure_types_list(self):
         # given
-        self.client.force_login(self.user_1)
+        CitadelTypeFactory(id=35832, name="Astrahus")
+        CitadelTypeFactory()
+        self.client.force_login(UserWithAccessFactory())
+
         # when
         response = self.client.get(reverse("structuretimers:select2_structure_types"))
+
         # then
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         data = json_response_to_python(response)
         self.assertEqual(data, {"results": None})

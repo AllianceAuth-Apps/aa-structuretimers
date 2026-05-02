@@ -1,12 +1,11 @@
 import datetime as dt
 import json
+from typing import NamedTuple
 from unittest.mock import Mock, patch
 
 import dhooks_lite
-from pytz import utc
 
 from django.core.cache import cache
-from django.db import models
 from django.test import TestCase, override_settings
 from django.utils.timezone import now
 from eveuniverse.models import EveSolarSystem
@@ -16,7 +15,6 @@ from app_utils.testing import NoSocketsTestCase
 
 from structuretimers import __title__
 from structuretimers.models import (
-    NotificationRule,
     ScheduledNotification,
     StagingSystem,
     Timer,
@@ -24,124 +22,93 @@ from structuretimers.models import (
 )
 
 from .testdata.factory import (
-    create_discord_webhook,
-    create_distances_from_staging,
-    create_notification_rule,
-    create_scheduled_notification,
-    create_staging_system,
-    create_timer,
-    create_user,
+    CitadelTypeFactory,
+    DiscordWebhookFactory,
+    DistancesFromStagingFactory,
+    EveSolarSystemFactory,
+    EveSolarSystemHighSecFactory,
+    EveSolarSystemLowSecFactory,
+    EveSolarSystemNullSecFactory,
+    EveSolarSystemWSpaceFactory,
+    NotificationRuleFactory,
+    ScheduledNotificationFactory,
+    StagingSystemFactory,
+    TimerFactory,
+    UserWithAccessFactory,
 )
-from .testdata.fixtures import LoadTestDataMixin
-from .testdata.load_eveuniverse import load_eveuniverse
-from .utils import add_permission_to_user_by_name
 
 MODULE_PATH = "structuretimers.models"
 
 
-class TestTimer(LoadTestDataMixin, NoSocketsTestCase):
+class TestTimer(NoSocketsTestCase):
     def test_str_1(self):
-        timer = Timer(
+        timer = TimerFactory.build(
             structure_name="Test",
             timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=dt.datetime(2020, 8, 6, 13, 25, tzinfo=utc),
+            eve_solar_system=EveSolarSystemFactory(name="Abune"),
+            structure_type=CitadelTypeFactory(name="Astrahus"),
+            date=dt.datetime(2020, 8, 6, 13, 25, tzinfo=dt.timezone.utc),
         )
-        expected = 'Armor timer for Raitaru "Test" in Abune @ 2020-08-06 13:25'
+        expected = 'Armor timer for Astrahus "Test" in Abune @ 2020-08-06 13:25'
         self.assertEqual(str(timer), expected)
 
     def test_str_2(self):
-        timer = Timer(
+        timer = TimerFactory.build(
             structure_name="Test",
             timer_type=Timer.Type.PRELIMINARY,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
+            eve_solar_system=EveSolarSystemFactory(name="Abune"),
+            structure_type=CitadelTypeFactory(name="Astrahus"),
         )
-        expected = 'Preliminary timer for Raitaru "Test" in Abune'
+        expected = 'Preliminary timer for Astrahus "Test" in Abune'
         self.assertEqual(str(timer), expected)
 
     def test_structure_display_name_1(self):
-        timer = Timer(
-            timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=dt.datetime(2020, 8, 6, 13, 25, tzinfo=utc),
+        timer = TimerFactory.build(
+            eve_solar_system=EveSolarSystemFactory(name="Abune"),
+            structure_type=CitadelTypeFactory(name="Astrahus"),
         )
-        expected = "Raitaru in Abune"
+        expected = "Astrahus in Abune"
         self.assertEqual(timer.structure_display_name, expected)
 
     def test_structure_display_name_2(self):
-        timer = Timer(
-            timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
+        timer = TimerFactory.build(
+            eve_solar_system=EveSolarSystemFactory(name="Abune"),
+            structure_type=CitadelTypeFactory(name="Astrahus"),
             location_details="P5-M3",
-            date=dt.datetime(2020, 8, 6, 13, 25, tzinfo=utc),
         )
-        expected = "Raitaru in Abune near P5-M3"
+        expected = "Astrahus in Abune near P5-M3"
         self.assertEqual(timer.structure_display_name, expected)
 
     def test_structure_display_name_3(self):
-        timer = Timer(
+        timer = TimerFactory.build(
             structure_name="Big Boy",
-            timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=dt.datetime(2020, 8, 6, 13, 25, tzinfo=utc),
+            eve_solar_system=EveSolarSystemFactory(name="Abune"),
+            structure_type=CitadelTypeFactory(name="Astrahus"),
         )
-        expected = 'Raitaru "Big Boy" in Abune'
+        expected = 'Astrahus "Big Boy" in Abune'
         self.assertEqual(timer.structure_display_name, expected)
-
-    def test_label_type_for_timer_type(self):
-        timer = Timer(date=now())
-        self.assertEqual(timer.label_type_for_timer_type(), "secondary")
-
-        timer.timer_type = Timer.Type.ARMOR
-        self.assertEqual(timer.label_type_for_timer_type(), "danger")
-
-        timer.timer_type = Timer.Type.HULL
-        self.assertEqual(timer.label_type_for_timer_type(), "danger")
-
-    def test_label_type_for_objective(self):
-        timer = Timer(date=now())
-        self.assertEqual(timer.label_type_for_objective(), "secondary")
-
-        timer.objective = Timer.Objective.HOSTILE
-        self.assertEqual(timer.label_type_for_objective(), "danger")
-
-        timer.objective = Timer.Objective.FRIENDLY
-        self.assertEqual(timer.label_type_for_objective(), "primary")
 
 
 @patch(MODULE_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())
-class TestTimerSaveXScheduleNotifications(LoadTestDataMixin, NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.webhook = create_discord_webhook()
-
+class TestTimer_ScheduleNotificationsOnSave(NoSocketsTestCase):
     @patch(MODULE_PATH + "._task_schedule_notifications_for_timer")
     def test_schedule_notifications_for_new_timers(self, mock_schedule_notifications):
-        timer = create_timer(
+        # when
+        timer = Timer.objects.create(
             date=now() + dt.timedelta(hours=4),
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            enabled_notifications=True,
+            eve_solar_system=EveSolarSystemFactory(),
+            structure_type=CitadelTypeFactory(),
+            timer_type=Timer.Type.ARMOR,
         )
+
+        # then
         self.assertTrue(mock_schedule_notifications.called)
         _, kwargs = mock_schedule_notifications.return_value.apply_async.call_args
         self.assertEqual(kwargs["kwargs"]["timer_pk"], timer.pk)
 
     def test_schedule_notifications_when_date_changed(self):
-        with patch(
-            MODULE_PATH + "._task_schedule_notifications_for_timer"
-        ) as mock_schedule_notifications:
-            timer = create_timer(
-                date=now() + dt.timedelta(hours=4),
-                eve_solar_system=self.system_abune,
-                structure_type=self.type_astrahus,
-            )
+        # when
+        timer = TimerFactory(date=now() + dt.timedelta(hours=4))
 
         with patch(
             MODULE_PATH + "._task_schedule_notifications_for_timer"
@@ -153,14 +120,9 @@ class TestTimerSaveXScheduleNotifications(LoadTestDataMixin, NoSocketsTestCase):
             self.assertEqual(kwargs["kwargs"]["timer_pk"], timer.pk)
 
     def test_dont_schedule_notifications_else(self):
-        with patch(
-            MODULE_PATH + "._task_schedule_notifications_for_timer"
-        ) as mock_schedule_notifications:
-            timer = create_timer(
-                date=now() + dt.timedelta(hours=4),
-                eve_solar_system=self.system_abune,
-                structure_type=self.type_astrahus,
-            )
+        timer = TimerFactory(
+            date=now() + dt.timedelta(hours=4),
+        )
 
         with patch(
             MODULE_PATH + "._task_schedule_notifications_for_timer"
@@ -174,7 +136,12 @@ class TestTimerSaveXScheduleNotifications(LoadTestDataMixin, NoSocketsTestCase):
         self, mock_schedule_notifications
     ):
         # when
-        create_timer(timer_type=Timer.Type.PRELIMINARY)
+        Timer.objects.create(
+            timer_type=Timer.Type.PRELIMINARY,
+            eve_solar_system=EveSolarSystemFactory(),
+            structure_type=CitadelTypeFactory(),
+        )
+
         # then
         self.assertFalse(mock_schedule_notifications.called)
 
@@ -183,15 +150,15 @@ class TestTimerSaveXScheduleNotifications(LoadTestDataMixin, NoSocketsTestCase):
         self, mock_schedule_notifications
     ):
         # given
-        rule = create_notification_rule(is_enabled=False)
-        timer = create_timer(date=now() + dt.timedelta(hours=4))
-        notification = create_scheduled_notification(
-            notification_rule=rule, timer=timer
-        )
+        rule = NotificationRuleFactory(is_enabled=False)
+        timer = TimerFactory(date=now() + dt.timedelta(hours=4))
+        notification = ScheduledNotificationFactory(notification_rule=rule, timer=timer)
         mock_schedule_notifications.reset()
+
         # when
         timer.timer_type = Timer.Type.PRELIMINARY
         timer.save()
+
         # then
         self.assertFalse(mock_schedule_notifications.called)
         self.assertFalse(
@@ -200,20 +167,16 @@ class TestTimerSaveXScheduleNotifications(LoadTestDataMixin, NoSocketsTestCase):
 
 
 @patch(MODULE_PATH + "._task_schedule_notifications_for_timer", Mock)
-class TestTimerSaveXCalcDistances(LoadTestDataMixin, NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.webhook = create_discord_webhook()
-
+class TestTimer_CalcDistancesOnSave(NoSocketsTestCase):
     @patch(MODULE_PATH + "._task_calc_timer_distances_for_all_staging_systems")
     def test_should_calc_distances_when_created(self, mock_calc_distances):
         # when
         timer = Timer.objects.create(
             date=now() + dt.timedelta(hours=4),
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
+            eve_solar_system=EveSolarSystemFactory(),
+            structure_type=CitadelTypeFactory(),
         )
+
         # then
         self.assertTrue(mock_calc_distances.called)
         _, kwargs = mock_calc_distances.return_value.apply_async.call_args
@@ -223,119 +186,62 @@ class TestTimerSaveXCalcDistances(LoadTestDataMixin, NoSocketsTestCase):
     def test_should_recalc_distances_when_solar_system_has_changed(
         self, mock_calc_distances
     ):
-        timer = create_timer(
-            date=now() + dt.timedelta(hours=4),
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-        )
+        # given
+        timer: Timer = TimerFactory(date=now() + dt.timedelta(hours=4))
+
         # when
-        timer.eve_solar_system = self.system_enaluri
+        timer.eve_solar_system = EveSolarSystemFactory()
         timer.save()
+
         # then
         self.assertTrue(mock_calc_distances.called)
 
     @patch(MODULE_PATH + "._task_calc_timer_distances_for_all_staging_systems")
-    def test_should_not_recalc_distances_when_solar_system_unchanged(
+    def test_should_not_recalc_distances_when_other_fields_changed(
         self, mock_calc_distances
     ):
-        timer = create_timer(
+        # given
+        timer = TimerFactory(
             date=now() + dt.timedelta(hours=4),
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
         )
         # when
-        timer.structure_type = self.type_raitaru
+        timer.structure_type = CitadelTypeFactory()
         timer.save()
+
         # then
         self.assertFalse(mock_calc_distances.called)
 
 
-class TestTimerSpaceType(NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        load_eveuniverse()
-
-    def test_can_detect_high_sec(self):
-        # when
-        result = Timer.SpaceType.from_eve_solar_system(
-            EveSolarSystem.objects.get(name="Jita")
-        )
-        # then
-        self.assertEqual(result, Timer.SpaceType.HIGH_SEC)
-
-    def test_can_detect_low_sec(self):
-        # when
-        result = Timer.SpaceType.from_eve_solar_system(
-            EveSolarSystem.objects.get(name="Abune")
-        )
-        # then
-        self.assertEqual(result, Timer.SpaceType.LOW_SEC)
-
-    def test_can_detect_null_sec(self):
-        # when
-        result = Timer.SpaceType.from_eve_solar_system(
-            EveSolarSystem.objects.get(name="HED-GP")
-        )
-        # then
-        self.assertEqual(result, Timer.SpaceType.NULL_SEC)
-
-    def test_can_detect_w_space(self):
-        # when
-        result = Timer.SpaceType.from_eve_solar_system(
-            EveSolarSystem.objects.get(name="J151645")
-        )
-        # then
-        self.assertEqual(result, Timer.SpaceType.WH_SPACE)
-
-
-@patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-class TestTimerAccess(LoadTestDataMixin, NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.user_1 = create_user(cls.character_1)
-        cls.user_2 = create_user(cls.character_2)
-        cls.user_3 = create_user(cls.character_3)
-        cls.user_1 = add_permission_to_user_by_name(
-            "structuretimers.create_timer", cls.user_1
-        )
-        cls.user_2 = add_permission_to_user_by_name(
-            "structuretimers.create_timer", cls.user_2
-        )
-        cls.user_2 = add_permission_to_user_by_name(
-            "structuretimers.manage_timer", cls.user_2
-        )
-        cls.user_2 = add_permission_to_user_by_name(
-            "structuretimers.opsec_access", cls.user_2
-        )
-
+class TestTimer_UserCanEdit(NoSocketsTestCase):
     def test_creator_can_edit_own_timer(self):
-        timer = Timer(
-            date=now() + dt.timedelta(hours=4),
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            user=self.user_1,
+        user = UserWithAccessFactory(
+            permissions__=[
+                "structuretimers.basic_access",
+                "structuretimers.create_timer",
+            ]
         )
-        self.assertTrue(timer.user_can_edit(self.user_1))
+        timer = TimerFactory(user=user)
+        self.assertTrue(timer.user_can_edit(user))
 
     def test_manager_can_edit_other_timers(self):
-        timer = Timer(
-            date=now() + dt.timedelta(hours=4),
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            user=self.user_1,
+        user = UserWithAccessFactory(
+            permissions__=[
+                "structuretimers.basic_access",
+                "structuretimers.manage_timer",
+            ]
         )
-        self.assertTrue(timer.user_can_edit(self.user_2))
+        timer = TimerFactory(user=UserWithAccessFactory())
+        self.assertTrue(timer.user_can_edit(user))
 
     def test_non_manager_can_not_edit_other_timer(self):
-        timer = Timer(
-            date=now() + dt.timedelta(hours=4),
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            user=self.user_1,
+        user = UserWithAccessFactory(
+            permissions__=[
+                "structuretimers.basic_access",
+                "structuretimers.create_timer",
+            ]
         )
-        self.assertFalse(timer.user_can_edit(self.user_3))
+        timer = TimerFactory(user=UserWithAccessFactory())
+        self.assertFalse(timer.user_can_edit(user))
 
     """
     def test_user_with_basic_access_can_view_normal_timer(self):
@@ -402,49 +308,17 @@ class TestTimerAccess(LoadTestDataMixin, NoSocketsTestCase):
     """
 
 
-@patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-@patch("structuretimers.managers.STRUCTURETIMERS_TIMERS_OBSOLETE_AFTER_DAYS", 1)
-class TestTimerManger(LoadTestDataMixin, NoSocketsTestCase):
-    def test_delete_old_timer(self):
-        timer_1 = create_timer(
-            timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            date=now(),
-        )
-        timer_2 = create_timer(
-            timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=now() - dt.timedelta(days=1, seconds=1),
-        )
-        result = Timer.objects.delete_obsolete()
-        self.assertEqual(result, 1)
-        self.assertTrue(Timer.objects.filter(pk=timer_1.pk).exists())
-        self.assertFalse(Timer.objects.filter(pk=timer_2.pk).exists())
-
-    def test_can_handle_no_timers(self):
-        result = Timer.objects.delete_obsolete()
-        self.assertEqual(result, 0)
-
-
 @patch(MODULE_PATH + ".DiscordWebhook.send_message", spec=True)
-class TestTimerSendNotification(LoadTestDataMixin, NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.webhook = create_discord_webhook()
-
+class TestTimer_SendNotification(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURETIMER_NOTIFICATION_SET_AVATAR", True)
     def test_should_send_minimal_notification(self, mock_send_message):
         # given
-        timer = Timer(
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=now(),
-        )
+        timer = TimerFactory()
+        webhook = DiscordWebhookFactory()
+
         # when
-        timer.send_notification(self.webhook)
+        timer.send_notification(webhook)
+
         # then
         self.assertEqual(mock_send_message.call_count, 1)
         _, kwargs = mock_send_message.call_args
@@ -454,13 +328,12 @@ class TestTimerSendNotification(LoadTestDataMixin, NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURETIMER_NOTIFICATION_SET_AVATAR", False)
     def test_should_send_notification_without_avatar(self, mock_send_message):
         # given
-        timer = Timer(
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=now(),
-        )
+        timer = TimerFactory()
+        webhook = DiscordWebhookFactory()
+
         # when
-        timer.send_notification(self.webhook)
+        timer.send_notification(webhook)
+
         # then
         self.assertEqual(mock_send_message.call_count, 1)
         _, kwargs = mock_send_message.call_args
@@ -468,149 +341,85 @@ class TestTimerSendNotification(LoadTestDataMixin, NoSocketsTestCase):
         self.assertIsNone(kwargs["avatar_url"])
 
     def test_with_content(self, mock_send_message):
-        timer = Timer(
-            structure_name="Test",
-            timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=now(),
-        )
-        timer.send_notification(self.webhook, "Extra Text")
+        # given
+        timer = TimerFactory()
+        webhook = DiscordWebhookFactory()
 
+        # when
+        timer.send_notification(webhook, "Extra Text")
+
+        # then
         self.assertEqual(mock_send_message.call_count, 1)
         _, kwargs = mock_send_message.call_args
         self.assertIn("Extra Text", kwargs["content"])
 
     def test_timer_with_options_1(self, mock_send_message):
-        timer = Timer(
-            structure_name="Test",
-            timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=now(),
-            objective=Timer.Objective.FRIENDLY,
-        )
-        timer.send_notification(self.webhook)
+        # given
+        timer = TimerFactory(objective=Timer.Objective.FRIENDLY)
+        webhook = DiscordWebhookFactory()
 
+        # when
+        timer.send_notification(webhook)
+
+        # then
         self.assertEqual(mock_send_message.call_count, 1)
 
     def test_timer_with_options_2(self, mock_send_message):
-        timer = Timer(
-            structure_name="Test",
-            timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=now(),
-            objective=Timer.Objective.HOSTILE,
-        )
-        timer.send_notification(self.webhook)
+        # given
+        timer = TimerFactory(objective=Timer.Objective.HOSTILE)
+        webhook = DiscordWebhookFactory()
 
+        # when
+        timer.send_notification(webhook)
+
+        # then
         self.assertEqual(mock_send_message.call_count, 1)
 
 
-@patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-class TestTimerQuerySet(LoadTestDataMixin, NoSocketsTestCase):
-    @patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    def setUp(self) -> None:
-        self.timer_1 = create_timer(
-            structure_name="Timer 1",
-            date=now() + dt.timedelta(hours=4),
-            eve_character=self.character_1,
-            eve_corporation=self.corporation_1,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            timer_type=Timer.Type.ARMOR,
-            objective=Timer.Objective.FRIENDLY,
-        )
-        self.timer_2 = create_timer(
-            structure_name="Timer 2",
-            date=now() - dt.timedelta(hours=8),
-            eve_character=self.character_1,
-            eve_corporation=self.corporation_1,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            timer_type=Timer.Type.HULL,
-            objective=Timer.Objective.FRIENDLY,
-        )
-        self.timer_qs = Timer.objects.all()
-        self.webhook = create_discord_webhook()
+class TestTimerSpaceType_FromEveSolarSystem(NoSocketsTestCase):
+    def test_all(self):
+        class Case(NamedTuple):
+            name: str
+            solar_system: EveSolarSystem
+            want: Timer.SpaceType
 
-    def test_conforms_with_notification_rule_1(self):
-        """
-        given two timers in qs
-        when one timer conforms with notification rule
-        then qs contains only conforming timer
-        """
-        rule = create_notification_rule(
-            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
-            scheduled_time=NotificationRule.MINUTES_10,
-            require_timer_types=[Timer.Type.ARMOR],
-            webhook=self.webhook,
-        )
-        new_qs = self.timer_qs.conforms_with_notification_rule(rule)
-        self.assertIsInstance(new_qs, models.QuerySet)
-        self.assertSetEqual(set(new_qs.values_list("pk", flat=True)), {self.timer_1.pk})
-
-    def test_conforms_with_notification_rule_2(self):
-        """
-        given two timers in qs
-        when no timer conforms with notification rule
-        then qs is empty
-        """
-        rule = create_notification_rule(
-            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
-            scheduled_time=NotificationRule.MINUTES_10,
-            webhook=self.webhook,
-        )
-        rule.require_corporations.add(self.corporation_3)
-        new_qs = self.timer_qs.conforms_with_notification_rule(rule)
-        self.assertIsInstance(new_qs, models.QuerySet)
-        self.assertSetEqual(set(new_qs.values_list("pk", flat=True)), set())
-
-    def test_conforms_with_notification_rule_3(self):
-        """
-        given two timers in qs
-        when all timer conforms with notification rule
-        then qs contains all timers
-        """
-        rule = create_notification_rule(
-            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
-            scheduled_time=NotificationRule.MINUTES_10,
-            require_objectives=[Timer.Objective.FRIENDLY],
-            webhook=self.webhook,
-        )
-        new_qs = self.timer_qs.conforms_with_notification_rule(rule)
-        self.assertIsInstance(new_qs, models.QuerySet)
-        self.assertSetEqual(
-            set(new_qs.values_list("pk", flat=True)), {self.timer_1.pk, self.timer_2.pk}
-        )
+        cases = [
+            Case("high sec", EveSolarSystemHighSecFactory(), Timer.SpaceType.HIGH_SEC),
+            Case("low sec", EveSolarSystemLowSecFactory(), Timer.SpaceType.LOW_SEC),
+            Case("null sec", EveSolarSystemNullSecFactory(), Timer.SpaceType.NULL_SEC),
+            Case("w sec", EveSolarSystemWSpaceFactory(), Timer.SpaceType.WH_SPACE),
+        ]
+        for tc in cases:
+            got = Timer.SpaceType.from_eve_solar_system(tc.solar_system)
+            self.assertEqual(got, tc.want)
 
 
-class TestDiscordWebhook(LoadTestDataMixin, TestCase):
-    def setUp(self) -> None:
-        self.webhook = create_discord_webhook(name="Dummy")
-
+class TestDiscordWebhook(TestCase):
     def test_str(self):
-        self.assertEqual(str(self.webhook), "Dummy")
+        webhook = DiscordWebhookFactory(name="Dummy")
+        self.assertEqual(str(webhook), "Dummy")
 
     def test_repr(self):
+        webhook = DiscordWebhookFactory(name="Dummy")
         self.assertEqual(
-            repr(self.webhook), f"DiscordWebhook(id={self.webhook.id}, name='Dummy')"
+            repr(webhook), f"DiscordWebhook(id={webhook.id}, name='Dummy')"
         )
 
     def test_queue_features(self):
         cache.clear()
-        self.assertEqual(self.webhook.queue_size(), 0)
-        self.webhook.send_message(content="Dummy message")
-        self.assertEqual(self.webhook.queue_size(), 1)
-        self.webhook.clear_queue()
-        self.assertEqual(self.webhook.queue_size(), 0)
+        webhook = DiscordWebhookFactory(name="Dummy")
+        self.assertEqual(webhook.queue_size(), 0)
+        webhook.send_message(content="Dummy message")
+        self.assertEqual(webhook.queue_size(), 1)
+        webhook.clear_queue()
+        self.assertEqual(webhook.queue_size(), 0)
 
     def test_send_message_normal(self):
         cache.clear()
+        webhook = DiscordWebhookFactory(name="Dummy")
         embed = dhooks_lite.Embed(description="my_description")
         self.assertEqual(
-            self.webhook.send_message(
+            webhook.send_message(
                 content="my_content",
                 username="my_username",
                 avatar_url="my_avatar_url",
@@ -618,9 +427,7 @@ class TestDiscordWebhook(LoadTestDataMixin, TestCase):
             ),
             1,
         )
-        message = json.loads(
-            self.webhook._main_queue.dequeue(), cls=JSONDateTimeDecoder
-        )
+        message = json.loads(webhook._main_queue.dequeue(), cls=JSONDateTimeDecoder)
         expected = {
             "content": "my_content",
             "embeds": [{"description": "my_description", "type": "rich"}],
@@ -631,16 +438,16 @@ class TestDiscordWebhook(LoadTestDataMixin, TestCase):
 
     def test_send_message_empty(self):
         cache.clear()
+        webhook = DiscordWebhookFactory(name="Dummy")
         with self.assertRaises(ValueError):
-            self.webhook.send_message()
+            webhook.send_message()
 
 
 @patch(MODULE_PATH + ".sleep", new=lambda x: x)
 @patch(MODULE_PATH + ".DiscordWebhook.send_message_to_webhook", spec=True)
-class TestDiscordWebhookSendQueuedMessages(TestCase):
-    def setUp(self) -> None:
-        self.webhook = create_discord_webhook()
-        self.webhook.clear_queue()
+class TestDiscordWebhook_SendQueuedMessages(NoSocketsTestCase):
+    def setUp(self):
+        cache.clear()
 
     def test_one_message(self, mock_send_message_to_webhook):
         """
@@ -648,13 +455,14 @@ class TestDiscordWebhookSendQueuedMessages(TestCase):
         then send it and returns 1
         """
         mock_send_message_to_webhook.return_value = True
-        self.webhook.send_message("dummy")
+        webhook = DiscordWebhookFactory()
+        webhook.send_message("dummy")
 
-        result = self.webhook.send_queued_messages()
+        result = webhook.send_queued_messages()
 
         self.assertEqual(result, 1)
         self.assertTrue(mock_send_message_to_webhook.called)
-        self.assertEqual(self.webhook.queue_size(), 0)
+        self.assertEqual(webhook.queue_size(), 0)
 
     def test_three_message(self, mock_send_message_to_webhook):
         """
@@ -662,15 +470,16 @@ class TestDiscordWebhookSendQueuedMessages(TestCase):
         then sends them and returns 3
         """
         mock_send_message_to_webhook.return_value = True
-        self.webhook.send_message("dummy-1")
-        self.webhook.send_message("dummy-2")
-        self.webhook.send_message("dummy-3")
+        webhook = DiscordWebhookFactory()
+        webhook.send_message("dummy-1")
+        webhook.send_message("dummy-2")
+        webhook.send_message("dummy-3")
 
-        result = self.webhook.send_queued_messages()
+        result = webhook.send_queued_messages()
 
         self.assertEqual(result, 3)
         self.assertEqual(mock_send_message_to_webhook.call_count, 3)
-        self.assertEqual(self.webhook.queue_size(), 0)
+        self.assertEqual(webhook.queue_size(), 0)
 
     def test_no_messages(self, mock_send_message_to_webhook):
         """
@@ -678,11 +487,12 @@ class TestDiscordWebhookSendQueuedMessages(TestCase):
         then do nothing and return 0
         """
         mock_send_message_to_webhook.return_value = True
-        result = self.webhook.send_queued_messages()
+        webhook = DiscordWebhookFactory()
+        result = webhook.send_queued_messages()
 
         self.assertEqual(result, 0)
         self.assertFalse(mock_send_message_to_webhook.called)
-        self.assertEqual(self.webhook.queue_size(), 0)
+        self.assertEqual(webhook.queue_size(), 0)
 
     def test_failed_message(self, mock_send_message_to_webhook):
         """
@@ -691,20 +501,21 @@ class TestDiscordWebhookSendQueuedMessages(TestCase):
         then re-queues message and return 0
         """
         mock_send_message_to_webhook.return_value = False
-        self.webhook.send_message("dummy")
+        webhook = DiscordWebhookFactory()
+        webhook.send_message("dummy")
 
-        result = self.webhook.send_queued_messages()
+        result = webhook.send_queued_messages()
 
         self.assertEqual(result, 0)
         self.assertTrue(mock_send_message_to_webhook.called)
-        self.assertEqual(self.webhook.queue_size(), 1)
+        self.assertEqual(webhook.queue_size(), 1)
 
 
 @patch(MODULE_PATH + ".dhooks_lite.Webhook.execute", spec=True)
 @patch(MODULE_PATH + ".logger", spec=True)
-class TestDiscordWebhookSendMessageToWebhook(NoSocketsTestCase):
+class TestDiscordWebhook_SendMessageToWebhook(NoSocketsTestCase):
     def setUp(self) -> None:
-        self.webhook = create_discord_webhook()
+        cache.clear()
 
     def test_send_normal(self, mock_logger, mock_execute):
         """
@@ -720,8 +531,9 @@ class TestDiscordWebhookSendMessageToWebhook(NoSocketsTestCase):
             "username": "my_username",
             "avatar_url": "my_avatar_url",
         }
+        webhook = DiscordWebhookFactory()
 
-        result = self.webhook.send_message_to_webhook(message)
+        result = webhook.send_message_to_webhook(message)
 
         self.assertTrue(result)
         self.assertTrue(mock_execute.called)
@@ -756,8 +568,9 @@ class TestDiscordWebhookSendMessageToWebhook(NoSocketsTestCase):
             "username": "my_username",
             "avatar_url": "my_avatar_url",
         }
+        webhook = DiscordWebhookFactory()
 
-        result = self.webhook.send_message_to_webhook(message)
+        result = webhook.send_message_to_webhook(message)
 
         self.assertFalse(result)
         self.assertTrue(mock_execute.called)
@@ -768,20 +581,20 @@ class TestDiscordWebhookSendMessageToWebhook(NoSocketsTestCase):
 @patch(MODULE_PATH + ".EveSolarSystem.jumps_to", lambda *args, **kwargs: 3)
 @patch(MODULE_PATH + "._task_calc_staging_system", wraps=_task_calc_staging_system)
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
-class TestStagingSystem(LoadTestDataMixin, NoSocketsTestCase):
+class TestStagingSystem(NoSocketsTestCase):
     def test_should_calc_distances(self, spy_task_calc_staging_system):
         # given
-        timer = create_timer(
+        timer = TimerFactory(
             structure_name="Test",
             timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=dt.datetime(2020, 8, 6, 13, 25, tzinfo=utc),
+            date=dt.datetime(2020, 8, 6, 13, 25, tzinfo=dt.timezone.utc),
         )
+
         # when
         staging_system = StagingSystem.objects.create(
-            eve_solar_system=self.system_enaluri
+            eve_solar_system=EveSolarSystemFactory()
         )
+
         # then
         obj = timer.distances.first()
         self.assertEqual(obj.staging_system, staging_system)
@@ -793,31 +606,30 @@ class TestStagingSystem(LoadTestDataMixin, NoSocketsTestCase):
         self, spy_task_calc_staging_system
     ):
         # given
-        create_timer(
-            structure_name="Test",
-            timer_type=Timer.Type.ARMOR,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_raitaru,
-            date=dt.datetime(2020, 8, 6, 13, 25, tzinfo=utc),
-        )
-        staging_system = create_staging_system(eve_solar_system=self.system_enaluri)
+        TimerFactory()
+        staging_system = StagingSystemFactory()
+
         # when
         staging_system.save()
+
         # then
         self.assertFalse(spy_task_calc_staging_system.called)
 
 
 @patch(MODULE_PATH + ".EveSolarSystem.jumps_to", spec=True)
 @patch(MODULE_PATH + ".EveSolarSystem.distance_to", spec=True)
-class TestDistancesFromStaging(LoadTestDataMixin, NoSocketsTestCase):
+class TestDistancesFromStaging_Calculate(NoSocketsTestCase):
     def test_should_calculate_distances(self, mock_distance_to, mock_jumps_to):
         # given
         mock_distance_to.return_value = 2.3
         mock_jumps_to.return_value = 4
-        timer = create_timer()
-        staging_system = create_staging_system()
-        distances = create_distances_from_staging(
-            timer, staging_system, light_years=None, jumps=None
+        timer = TimerFactory()
+        staging_system = StagingSystemFactory()
+        distances = DistancesFromStagingFactory(
+            timer=timer,
+            staging_system=staging_system,
+            light_years=None,
+            jumps=None,
         )
         # when
         distances.calculate()
@@ -831,10 +643,13 @@ class TestDistancesFromStaging(LoadTestDataMixin, NoSocketsTestCase):
         # given
         mock_distance_to.return_value = 2.3
         mock_jumps_to.return_value = 4
-        timer = create_timer()
-        staging_system = create_staging_system(eve_solar_system=None)
-        distances = create_distances_from_staging(
-            timer, staging_system, light_years=None, jumps=None
+        timer = TimerFactory()
+        staging_system = StagingSystemFactory(eve_solar_system=None)
+        distances = DistancesFromStagingFactory(
+            timer=timer,
+            staging_system=staging_system,
+            light_years=None,
+            jumps=None,
         )
         # when
         distances.calculate()

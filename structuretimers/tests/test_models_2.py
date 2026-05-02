@@ -1,387 +1,311 @@
 import datetime as dt
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-from django.db import models
 from django.utils.timezone import now
-from eveuniverse.models import EveRegion, EveSolarSystem
 
-from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
+from app_utils.testdata_factories import (
+    EveAllianceInfoFactory,
+    EveCorporationInfoFactory,
+)
 from app_utils.testing import NoSocketsTestCase
 
 from structuretimers.models import NotificationRule, ScheduledNotification, Timer
 from structuretimers.tests.testdata.factory import (
-    create_discord_webhook,
-    create_notification_rule,
-    create_scheduled_notification,
-    create_timer,
+    DiscordWebhookFactory,
+    EveSolarSystemHighSecFactory,
+    EveSolarSystemLowSecFactory,
+    EveSolarSystemNullSecFactory,
+    EveSolarSystemWSpaceFactory,
+    NotificationRuleFactory,
+    ScheduledNotificationFactory,
+    TimerFactory,
 )
-from structuretimers.tests.testdata.fixtures import LoadTestDataMixin
 
 MODULE_PATH = "structuretimers.models"
 
 
-@patch(MODULE_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())
-@patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-class TestNotificationRuleIsMatchingTimer(LoadTestDataMixin, NoSocketsTestCase):
+class TestNotificationRule_IsMatchingTimer(NoSocketsTestCase):
     def test_should_match_when_no_rules_set(self):
         # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
-        rule = create_notification_rule()
+        timer = TimerFactory()
+        rule: NotificationRule = NotificationRuleFactory()
+
         # when/then
         self.assertTrue(rule.is_matching_timer(timer))
 
-    def test_require_timer_types(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule(require_timer_types=[Timer.Type.ARMOR])
-        # do not process if it does not match
-        self.assertFalse(rule.is_matching_timer(timer))
-        # process if it does match
-        timer.timer_type = Timer.Type.ARMOR
-        self.assertTrue(rule.is_matching_timer(timer))
+    def test_should_match_require_timer_types(self):
+        rule: NotificationRule = NotificationRuleFactory(
+            require_timer_types=[Timer.Type.ARMOR]
+        )
+        cases = [
+            (Timer.Type.ANCHORING, False),
+            (Timer.Type.ARMOR, True),
+            (Timer.Type.FINAL, False),
+            (Timer.Type.HULL, False),
+            (Timer.Type.MOONMINING, False),
+            (Timer.Type.NONE, False),
+            (Timer.Type.PRELIMINARY, False),
+            (Timer.Type.THEFT, False),
+        ]
 
-    def test_exclude_timer_types(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule(exclude_timer_types=[Timer.Type.ARMOR])
-        # process if it does match
-        self.assertTrue(rule.is_matching_timer(timer))
-        # do not process if it does not match
-        timer.timer_type = Timer.Type.ARMOR
-        self.assertFalse(rule.is_matching_timer(timer))
+        for tc in cases:
+            with self.subTest(type=tc[0]):
+                timer: Timer = TimerFactory(timer_type=tc[0])
+                self.assertIs(rule.is_matching_timer(timer), tc[1])
+
+    def test_should_match_exclude_timer_types(self):
+        rule: NotificationRule = NotificationRuleFactory(
+            exclude_timer_types=[Timer.Type.ARMOR]
+        )
+        cases = [
+            (Timer.Type.ANCHORING, True),
+            (Timer.Type.ARMOR, False),
+            (Timer.Type.FINAL, True),
+            (Timer.Type.HULL, True),
+            (Timer.Type.MOONMINING, True),
+            (Timer.Type.NONE, True),
+            (Timer.Type.PRELIMINARY, False),
+            (Timer.Type.THEFT, True),
+        ]
+
+        for tc in cases:
+            with self.subTest(type=tc[0]):
+                timer: Timer = TimerFactory(timer_type=tc[0])
+                self.assertIs(rule.is_matching_timer(timer), tc[1])
 
     def test_should_never_match_without_date(self):
         # given
-        timer = create_timer(date=None)
-        rule = create_notification_rule()
+        timer = TimerFactory(date=None)
+        rule: NotificationRule = NotificationRuleFactory()
+
         # when/then
         self.assertFalse(rule.is_matching_timer(timer))
 
-    def test_require_objectives(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule(require_objectives=[Timer.Objective.HOSTILE])
-        # do not process if it does not match
-        self.assertFalse(rule.is_matching_timer(timer))
-        # process if it does match
-        timer.objective = Timer.Objective.HOSTILE
-        self.assertTrue(rule.is_matching_timer(timer))
-
-    def test_exclude_objectives(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule(exclude_objectives=[Timer.Objective.HOSTILE])
-        # process if it does match
-        self.assertTrue(rule.is_matching_timer(timer))
-
-        # do not process if it does not match
-        timer.objective = Timer.Objective.HOSTILE
-        self.assertFalse(rule.is_matching_timer(timer))
-
-    def test_require_corporations(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule()
-        rule.require_corporations.add(
-            EveCorporationInfo.objects.get(corporation_id=2001)
+    def test_should_match_require_objectives(self):
+        rule: NotificationRule = NotificationRuleFactory(
+            require_objectives=[Timer.Objective.HOSTILE]
         )
-        # do not process if it does not match
-        self.assertFalse(rule.is_matching_timer(timer))
+        cases = [
+            (Timer.Objective.FRIENDLY, False),
+            (Timer.Objective.HOSTILE, True),
+            (Timer.Objective.NEUTRAL, False),
+            (Timer.Objective.UNDEFINED, False),
+        ]
 
-        # process if it does match
-        timer.eve_corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        timer.save()
-        self.assertTrue(rule.is_matching_timer(timer))
+        for tc in cases:
+            with self.subTest(type=tc[0]):
+                timer: Timer = TimerFactory(objective=tc[0])
+                self.assertIs(rule.is_matching_timer(timer), tc[1])
 
-    def test_exclude_corporations(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule()
-        # process if it does match
-        rule.exclude_corporations.add(
-            EveCorporationInfo.objects.get(corporation_id=2001)
+    def test_should_match_exclude_objectives(self):
+        rule: NotificationRule = NotificationRuleFactory(
+            exclude_objectives=[Timer.Objective.HOSTILE]
         )
-        self.assertTrue(rule.is_matching_timer(timer))
-        # do not process if it does not match
-        timer.eve_corporation = EveCorporationInfo.objects.get(corporation_id=2001)
-        timer.save()
-        self.assertFalse(rule.is_matching_timer(timer))
+        cases = [
+            (Timer.Objective.FRIENDLY, True),
+            (Timer.Objective.HOSTILE, False),
+            (Timer.Objective.NEUTRAL, True),
+            (Timer.Objective.UNDEFINED, True),
+        ]
 
-    def test_require_alliances(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule()
-        rule.require_alliances.add(EveAllianceInfo.objects.get(alliance_id=3001))
-        # do not process if it does not match
-        self.assertFalse(rule.is_matching_timer(timer))
-        # process if it does match
-        timer.eve_alliance = EveAllianceInfo.objects.get(alliance_id=3001)
-        timer.save()
-        self.assertTrue(rule.is_matching_timer(timer))
+        for tc in cases:
+            with self.subTest(type=tc[0]):
+                timer: Timer = TimerFactory(objective=tc[0])
+                self.assertIs(rule.is_matching_timer(timer), tc[1])
 
-    def test_exclude_alliances(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule()
-        rule.exclude_alliances.add(EveAllianceInfo.objects.get(alliance_id=3001))
-        # process if it does match
-        self.assertTrue(rule.is_matching_timer(timer))
-        # do not process if it does not match
-        timer.eve_alliance = EveAllianceInfo.objects.get(alliance_id=3001)
-        timer.save()
-        self.assertFalse(rule.is_matching_timer(timer))
+    def test_should_match_require_corporations(self):
+        corp = EveCorporationInfoFactory()
+        rule: NotificationRule = NotificationRuleFactory()
+        rule.require_corporations.add(corp)
 
-    def test_require_visibility(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule(
+        match: Timer = TimerFactory(eve_corporation=corp)
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory()
+        self.assertFalse(rule.is_matching_timer(no_match))
+
+    def test_should_match_exclude_corporations(self):
+        corp = EveCorporationInfoFactory()
+        rule: NotificationRule = NotificationRuleFactory()
+        rule.exclude_corporations.add(corp)
+
+        match: Timer = TimerFactory()
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory(eve_corporation=corp)
+        self.assertFalse(rule.is_matching_timer(no_match))
+
+    def test_should_match_require_alliance(self):
+        all = EveAllianceInfoFactory()
+        rule: NotificationRule = NotificationRuleFactory()
+        rule.require_alliances.add(all)
+
+        match: Timer = TimerFactory(eve_alliance=all)
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory()
+        self.assertFalse(rule.is_matching_timer(no_match))
+
+    def test_should_match_exclude_alliance(self):
+        all = EveAllianceInfoFactory()
+        rule: NotificationRule = NotificationRuleFactory()
+        rule.exclude_alliances.add(all)
+
+        match: Timer = TimerFactory()
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory(eve_alliance=all)
+        self.assertFalse(rule.is_matching_timer(no_match))
+
+    def test_should_match_require_visibility(self):
+        rule: NotificationRule = NotificationRuleFactory(
             require_visibility=[Timer.Visibility.CORPORATION]
         )
-        # do not process if it does not match
-        self.assertFalse(rule.is_matching_timer(timer))
-        # process if it does match
-        timer.visibility = Timer.Visibility.CORPORATION
-        self.assertTrue(rule.is_matching_timer(timer))
 
-    def test_exclude_visibility(self):
-        # given
-        timer = create_timer()
-        rule = create_notification_rule(
+        match: Timer = TimerFactory(visibility=Timer.Visibility.CORPORATION)
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory()
+        self.assertFalse(rule.is_matching_timer(no_match))
+
+    def test_should_match_exclude_visibility(self):
+        rule: NotificationRule = NotificationRuleFactory(
             exclude_visibility=[Timer.Visibility.CORPORATION]
         )
-        # process if it does match
-        self.assertTrue(rule.is_matching_timer(timer))
-        # do not process if it does not match
-        timer.visibility = Timer.Visibility.CORPORATION
-        self.assertFalse(rule.is_matching_timer(timer))
 
-    def test_require_important(self):
-        timer = create_timer()
-        rule = create_notification_rule(is_important=NotificationRule.Clause.REQUIRED)
-        # do not process if it does not match
-        self.assertFalse(rule.is_matching_timer(timer))
-        # process if it does match
-        timer.is_important = True
-        self.assertTrue(rule.is_matching_timer(timer))
+        match: Timer = TimerFactory()
+        self.assertTrue(rule.is_matching_timer(match))
 
-    def test_exclude_important(self):
-        timer = create_timer()
-        rule = create_notification_rule(is_important=NotificationRule.Clause.EXCLUDED)
-        # process if it does match
-        self.assertTrue(rule.is_matching_timer(timer))
-        # do not process if it does not match
-        timer.is_important = True
-        self.assertFalse(rule.is_matching_timer(timer))
+        no_match: Timer = TimerFactory(visibility=Timer.Visibility.CORPORATION)
+        self.assertFalse(rule.is_matching_timer(no_match))
 
-    def test_require_opsec(self):
-        timer = create_timer()
-        rule = create_notification_rule(is_opsec=NotificationRule.Clause.REQUIRED)
-        # do not process if it does not match
-        self.assertFalse(rule.is_matching_timer(timer))
-        # process if it does match
-        timer.is_opsec = True
-        self.assertTrue(rule.is_matching_timer(timer))
+    def test_should_match_require_important(self):
+        rule: NotificationRule = NotificationRuleFactory(
+            is_important=NotificationRule.Clause.REQUIRED
+        )
 
-    def test_exclude_opsec(self):
-        timer = create_timer()
-        rule = create_notification_rule(is_opsec=NotificationRule.Clause.EXCLUDED)
-        # process if it does match
-        self.assertTrue(rule.is_matching_timer(timer))
-        # do not process if it does not match
-        timer.is_opsec = True
-        self.assertFalse(rule.is_matching_timer(timer))
+        match: Timer = TimerFactory(is_important=True)
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory()
+        self.assertFalse(rule.is_matching_timer(no_match))
+
+    def test_should_match_exclude_important(self):
+        rule: NotificationRule = NotificationRuleFactory(
+            is_important=NotificationRule.Clause.EXCLUDED
+        )
+
+        match: Timer = TimerFactory()
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory(is_important=True)
+        self.assertFalse(rule.is_matching_timer(no_match))
+
+    def test_should_match_require_opsec(self):
+        rule: NotificationRule = NotificationRuleFactory(
+            is_opsec=NotificationRule.Clause.REQUIRED
+        )
+
+        match: Timer = TimerFactory(is_opsec=True)
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory()
+        self.assertFalse(rule.is_matching_timer(no_match))
+
+    def test_should_match_exclude_opsec(self):
+        rule: NotificationRule = NotificationRuleFactory(
+            is_opsec=NotificationRule.Clause.EXCLUDED
+        )
+
+        match: Timer = TimerFactory()
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory(is_opsec=True)
+        self.assertFalse(rule.is_matching_timer(no_match))
 
     def test_should_match_require_regions(self):
-        # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
-        rule = create_notification_rule()
-        rule.require_regions.add(EveRegion.objects.get(name="Essence"))
-        # when/then
-        self.assertTrue(rule.is_matching_timer(timer))
+        solar_system = EveSolarSystemLowSecFactory()
+        rule: NotificationRule = NotificationRuleFactory()
+        rule.require_regions.add(solar_system.eve_constellation.eve_region)
 
-    def test_should_not_match_require_regions(self):
-        # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
-        rule = create_notification_rule()
-        rule.require_regions.add(EveRegion.objects.get(name="Black Rise"))
-        # when/then
-        self.assertFalse(rule.is_matching_timer(timer))
+        match: Timer = TimerFactory(eve_solar_system=solar_system)
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory()
+        self.assertFalse(rule.is_matching_timer(no_match))
 
     def test_should_match_exclude_regions(self):
-        # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
-        rule = create_notification_rule()
-        rule.exclude_regions.add(EveRegion.objects.get(name="Essence"))
-        # when/then
-        self.assertFalse(rule.is_matching_timer(timer))
+        solar_system = EveSolarSystemLowSecFactory()
+        rule: NotificationRule = NotificationRuleFactory()
+        rule.exclude_regions.add(solar_system.eve_constellation.eve_region)
 
-    def test_should_not_match_exclude_regions(self):
-        # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
-        rule = create_notification_rule()
-        rule.exclude_regions.add(EveRegion.objects.get(name="Black Rise"))
-        # when/then
-        self.assertTrue(rule.is_matching_timer(timer))
+        match: Timer = TimerFactory()
+        self.assertTrue(rule.is_matching_timer(match))
+
+        no_match: Timer = TimerFactory(eve_solar_system=solar_system)
+        self.assertFalse(rule.is_matching_timer(no_match))
 
     def test_should_match_require_space_types(self):
-        # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
-        rule = create_notification_rule(require_space_types=[Timer.SpaceType.LOW_SEC])
-        # when/then
-        self.assertTrue(rule.is_matching_timer(timer))
+        rule = NotificationRuleFactory(require_space_types=[Timer.SpaceType.LOW_SEC])
 
-    def test_should_not_match_require_space_types(self):
-        # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
-        rule = create_notification_rule(require_space_types=[Timer.SpaceType.NULL_SEC])
-        # when/then
-        self.assertFalse(rule.is_matching_timer(timer))
+        cases = [
+            ("high sec", EveSolarSystemHighSecFactory(), False),
+            ("low sec", EveSolarSystemLowSecFactory(), True),
+            ("null sec", EveSolarSystemNullSecFactory(), False),
+            ("w space", EveSolarSystemWSpaceFactory(), False),
+        ]
+
+        for tc in cases:
+            with self.subTest(name=tc[0]):
+                timer: Timer = TimerFactory(eve_solar_system=tc[1])
+                self.assertIs(rule.is_matching_timer(timer), tc[2])
 
     def test_should_match_exclude_space_types(self):
-        # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
-        rule = create_notification_rule(exclude_space_types=[Timer.SpaceType.NULL_SEC])
-        # when/then
-        self.assertTrue(rule.is_matching_timer(timer))
+        rule = NotificationRuleFactory(exclude_space_types=[Timer.SpaceType.LOW_SEC])
 
-    def test_should_not_match_exclude_space_types(self):
-        # given
-        timer = create_timer(eve_solar_system=EveSolarSystem.objects.get(name="Abune"))
-        rule = create_notification_rule(exclude_space_types=[Timer.SpaceType.LOW_SEC])
-        # when/then
-        self.assertFalse(rule.is_matching_timer(timer))
+        cases = [
+            ("high sec", EveSolarSystemHighSecFactory(), True),
+            ("low sec", EveSolarSystemLowSecFactory(), False),
+            ("null sec", EveSolarSystemNullSecFactory(), True),
+            ("w space", EveSolarSystemWSpaceFactory(), True),
+        ]
 
-
-@patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-class TestNotificationRuleQuerySet(LoadTestDataMixin, NoSocketsTestCase):
-    @patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    def setUp(self) -> None:
-        self.webhook = create_discord_webhook()
-        self.rule_1 = create_notification_rule(
-            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
-            scheduled_time=10,
-            require_timer_types=[Timer.Type.ARMOR],
-            webhook=self.webhook,
-        )
-        self.rule_2 = create_notification_rule(
-            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
-            scheduled_time=15,
-            require_objectives=[Timer.Objective.FRIENDLY],
-            webhook=self.webhook,
-        )
-        self.rule_qs = NotificationRule.objects.all()
-
-    def test_conforms_with_timer_1(self):
-        """
-        given two rules in qs
-        when one rule conforms with timer
-        then qs contains only conforming rule
-        """
-        timer = create_timer(
-            structure_name="Test Timer",
-            date=now() + dt.timedelta(hours=4),
-            eve_character=self.character_1,
-            eve_corporation=self.corporation_1,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            timer_type=Timer.Type.ARMOR,
-            objective=Timer.Objective.HOSTILE,
-        )
-        new_qs = self.rule_qs.conforms_with_timer(timer)
-        self.assertIsInstance(new_qs, models.QuerySet)
-        self.assertSetEqual(set(new_qs.values_list("pk", flat=True)), {self.rule_1.pk})
-
-    def test_conforms_with_timer_2(self):
-        """
-        given two rules in qs
-        when no rule conforms with timer
-        then qs is empty
-        """
-        timer = create_timer(
-            structure_name="Test Timer",
-            date=now() + dt.timedelta(hours=4),
-            eve_character=self.character_1,
-            eve_corporation=self.corporation_1,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            timer_type=Timer.Type.HULL,
-            objective=Timer.Objective.HOSTILE,
-        )
-        new_qs = self.rule_qs.conforms_with_timer(timer)
-        self.assertIsInstance(new_qs, models.QuerySet)
-        self.assertSetEqual(set(new_qs.values_list("pk", flat=True)), set())
-
-    def test_conforms_with_timer_3(self):
-        """
-        given two rules in qs
-        when one rule conforms with timer
-        then qs contains only conforming rule
-        """
-        timer = create_timer(
-            structure_name="Test Timer",
-            date=now() + dt.timedelta(hours=4),
-            eve_character=self.character_1,
-            eve_corporation=self.corporation_1,
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
-            timer_type=Timer.Type.ARMOR,
-            objective=Timer.Objective.FRIENDLY,
-        )
-        new_qs = self.rule_qs.conforms_with_timer(timer)
-        self.assertIsInstance(new_qs, models.QuerySet)
-        self.assertSetEqual(
-            set(new_qs.values_list("pk", flat=True)), {self.rule_1.pk, self.rule_2.pk}
-        )
+        for tc in cases:
+            with self.subTest(name=tc[0]):
+                timer: Timer = TimerFactory(eve_solar_system=tc[1])
+                self.assertIs(rule.is_matching_timer(timer), tc[2])
 
 
 @patch(MODULE_PATH + ".NotificationRule._import_schedule_notifications_for_rule")
-class TestNotificationRuleSave(LoadTestDataMixin, NoSocketsTestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.webhook = create_discord_webhook(name="dummy", url="dummy-url")
-
+class TestNotificationRule_UpdateOnSave(NoSocketsTestCase):
     @patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", True)
-    def test_scheduled_normal(self, mock_schedule_notifications):
-        """
-        given notifications are enabled
-        when trigger is scheduled and enabled
-        then schedule notifications
-        """
+    def test_should_schedule_notifications(self, mock_schedule_notifications):
         rule = NotificationRule(
             trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
             scheduled_time=NotificationRule.MINUTES_10,
-            webhook=self.webhook,
+            webhook=DiscordWebhookFactory(),
         )
         rule.save()
         self.assertTrue(mock_schedule_notifications.called)
 
     @patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    def test_scheduled_disabled_1(self, mock_schedule_notifications):
-        """
-        given notifications are disabled
-        when trigger is scheduled and enabled
-        then do not schedule notifications
-        """
+    def test_should_not_schedule_when_global_disabled(
+        self, mock_schedule_notifications
+    ):
         rule = NotificationRule(
             trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
             scheduled_time=NotificationRule.MINUTES_10,
-            webhook=self.webhook,
+            webhook=DiscordWebhookFactory(),
         )
         rule.save()
         self.assertFalse(mock_schedule_notifications.called)
 
     @patch(MODULE_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", True)
-    def test_scheduled_disabled_2(self, mock_schedule_notifications):
-        """
-        given notifications are enabled
-        when trigger is scheduled and disabled
-        then do not schedule notifications
-        """
+    def test_should_not_schedule_when_rule_disabled(self, mock_schedule_notifications):
         rule = NotificationRule(
             trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
             scheduled_time=NotificationRule.MINUTES_10,
-            webhook=self.webhook,
+            webhook=DiscordWebhookFactory(),
             is_enabled=False,
         )
         rule.save()
@@ -393,17 +317,15 @@ class TestNotificationRuleSave(LoadTestDataMixin, NoSocketsTestCase):
         when trigger is created
         then delete all scheduled notifications based on same rule
         """
-        rule = create_notification_rule(
+        rule: NotificationRule = NotificationRuleFactory(
             trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
             scheduled_time=NotificationRule.MINUTES_10,
-            webhook=self.webhook,
+            webhook=DiscordWebhookFactory(),
         )
-        timer = create_timer(
+        timer: Timer = TimerFactory(
             date=now() + dt.timedelta(hours=4),
-            eve_solar_system=self.system_abune,
-            structure_type=self.type_astrahus,
         )
-        obj = create_scheduled_notification(
+        obj = ScheduledNotificationFactory(
             timer=timer,
             notification_rule=rule,
             timer_date=timer.date,

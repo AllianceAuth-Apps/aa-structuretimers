@@ -12,7 +12,7 @@ from django.utils.timezone import now
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from allianceauth.services.tasks import QueueOnce
-from app_utils.esi import retry_task_on_esi_error_and_offline
+from app_utils.esi import retry_task_on_esi_error_and_offline  # TODO: -> OpenAPI
 from app_utils.logging import LoggerAddTag
 
 from . import __title__
