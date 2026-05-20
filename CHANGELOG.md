@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+## [3.0.0a2] - 2026-05-20
+
+## Changed
+
+- Added missing migration
+- Updated dependencies
+
 ## [3.0.0a1] - 2026-05-01
 
 ## Changed
