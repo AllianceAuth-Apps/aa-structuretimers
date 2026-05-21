@@ -230,7 +230,7 @@ class TimerForm(forms.ModelForm):
             requests.exceptions.HTTPError,
         ) as ex:
             logger.warning(
-                f"Failed to load image from URL: {details_image_url}", exc_info=True
+                "Failed to load image from URL: %s", details_image_url, exc_info=True
             )
             raise forms.ValidationError(
                 {
@@ -244,8 +244,9 @@ class TimerForm(forms.ModelForm):
         image_type = puremagic.from_string(r.content, mime=True)
         if image_type not in {"image/gif", "image/jpeg", "image/png"}:
             logger.warning(
-                f"{image_type} is not a valid image type "
-                "for URL: {details_image_url}"
+                "%s is not a valid image type for URL: %s",
+                image_type,
+                details_image_url,
             )
             raise forms.ValidationError(
                 {
