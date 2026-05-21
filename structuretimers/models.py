@@ -30,17 +30,20 @@ from allianceauth.services.hooks import get_extension_logger
 from app_utils.allianceauth import get_redis_client
 from app_utils.datetime import DATETIME_FORMAT
 from app_utils.json import JSONDateTimeDecoder, JSONDateTimeEncoder
-from app_utils.logging import LoggerAddTag
 from app_utils.urls import reverse_absolute, static_file_absolute_url
 
-from . import __title__
-from .app_settings import (
+from structuretimers import __title__
+from structuretimers.app_settings import (
     STRUCTURETIMER_NOTIFICATION_SET_AVATAR,
     STRUCTURETIMERS_NOTIFICATIONS_ENABLED,
 )
-from .managers import DistancesFromStagingManager, NotificationRuleManager, TimerManager
+from structuretimers.managers import (
+    DistancesFromStagingManager,
+    NotificationRuleManager,
+    TimerManager,
+)
 
-logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+logger = get_extension_logger(__name__)
 
 
 def default_avatar_url() -> str:

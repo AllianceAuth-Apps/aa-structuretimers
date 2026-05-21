@@ -13,10 +13,9 @@ from esi.decorators import rate_limit_retry_task
 from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from allianceauth.services.tasks import QueueOnce
-from app_utils.logging import LoggerAddTag
 
-from . import __title__
-from .models import (
+from structuretimers import __title__
+from structuretimers.models import (
     DiscordWebhook,
     DistancesFromStaging,
     NotificationRule,
@@ -25,7 +24,7 @@ from .models import (
     Timer,
 )
 
-logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+logger = get_extension_logger(__name__)
 TASK_PRIORITY_HIGH = 4
 
 

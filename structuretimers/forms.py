@@ -16,13 +16,11 @@ from eveuniverse.models import EveSolarSystem, EveType
 
 from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 from allianceauth.services.hooks import get_extension_logger
-from app_utils.logging import LoggerAddTag
 
-from . import __title__
 from .constants import EveGroupId
 from .models import Timer
 
-logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+logger = get_extension_logger(__name__)
 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
 
