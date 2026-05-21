@@ -2,13 +2,21 @@
 
 # pylint: disable=too-many-ancestors,missing-function-docstring, missing-class-docstring
 
+import datetime
+import json
 import math
+import re
 from copy import deepcopy
 from typing import Iterable
 
+from pytz import utc
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+
+# from django.core import serializers
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -17,6 +25,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext as _
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -44,7 +53,7 @@ from .app_settings import (
 )
 from .constants import EveCategoryId, EveGroupId, EveTypeId
 from .forms import TimerForm
-from .models import DistancesFromStaging, StagingSystem, Timer
+from .models import ApiKey, DistancesFromStaging, StagingSystem, Timer
 
 logger = LoggerAddTag(get_extension_logger(__name__), __title__)
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
@@ -54,6 +63,155 @@ MAX_HOURS_PASSED = 2
 def bootstrap5_label_html(text: str, label: str = "secondary") -> str:
     """Return HTML for a Bootstrap 5 label."""
     return format_html('<span class="badge text-bg-{}">{}</span>', label, text)
+
+
+def parse_time_string(timestring):
+    if re.match(r"\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}", timestring):
+        parts = re.split("\\.| |:", timestring)
+        parts = [int(n) for n in parts]
+        print(parts)
+        dt = datetime.datetime(
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+            parts[4],
+            parts[5],
+            tzinfo=utc,
+        )
+    elif re.match(r"\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}", timestring):
+        parts = re.split("\\.| |:", timestring)
+        parts = [int(n) for n in parts]
+        print(parts)
+        dt = datetime.datetime(
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+            parts[4],
+            0,
+            tzinfo=utc,
+        )
+    elif re.match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}", timestring):
+        parts = re.split("\\.|-| |:", timestring)
+        parts = [int(n) for n in parts]
+        print(parts)
+        dt = datetime.datetime(
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+            parts[4],
+            0,
+            tzinfo=utc,
+        )
+    else:
+        return False
+    return dt
+
+
+@csrf_exempt
+def api(request):
+    if "X-Structuretimers-Key" in request.headers:
+        apikey = get_object_or_404(
+            ApiKey, secret=request.headers["X-Structuretimers-Key"]
+        )
+        returndata = {}
+        user = apikey.user
+        if request.method == "POST":
+            if not user.has_perm("structuretimers.create_timer"):
+                print(f"{user} can not create timers")
+                raise PermissionDenied()
+
+            character = user.profile.main_character
+            if character is None:
+                logger.error("structuretimer api user has no main character")
+                raise PermissionDenied()
+            alliance = character.alliance
+            corporation = character.corporation
+            if len(request.body) < 10:
+                return JsonResponse({"result": "missing data"}, status=404)
+            try:
+                data = json.loads(request.body)
+            except json.decoder.JSONDecodeError:
+                logger.info("recieved invalid json")
+                return JsonResponse({"result": "invalid json"}, status=400)
+            system = EveSolarSystem.objects.filter(name=data["system"])[0]
+            structure_type = EveType.objects.filter(id=data["structure"])[0]
+            dt = parse_time_string(data["timer"])
+            new_timer = Timer(
+                date=dt,
+                eve_solar_system=system,
+                structure_type=structure_type,
+                structure_name=data["structure_name"],
+                timer_type=data["timertype"],
+                objective=data["objective"],
+                details_notes=data["msg"],
+                eve_character=character,
+                eve_corporation=corporation,
+                eve_alliance=alliance,
+                user=user,
+            )
+            if "owner" in data and data["owner"]:
+                new_timer.owner_name = data["owner"]
+            if "planet" in data and data["planet"]:
+                new_timer.location_details = f"Planet {data['planet']}"
+            new_timer.save()
+            returndata = {
+                "username": apikey.user.username,
+                "system": {"id": system.id, "name": system.name},
+                "structure": {
+                    "id": structure_type.id,
+                    "type": structure_type.name,
+                    "name": data["structure_name"],
+                },
+                "url": f"{request.build_absolute_uri(new_timer.get_absolute_url())}edit/{new_timer.pk}",
+            }
+            logger.info("created new timer, returning confirm")
+            logger.info(returndata)
+        elif request.method == "GET":
+            returndata = get_timers_for_api(request, user)
+        return JsonResponse(returndata)
+    raise PermissionDenied()
+
+
+def get_timers_for_api(request, user):
+    if not user.has_perm("structuretimers.basic_access"):
+        print(f"{user} can not create timers")
+        raise PermissionDenied()
+    returndata = {}
+    hours_passed = MAX_HOURS_PASSED
+    hours_until = 24
+    if "hours-passed" in request.headers:
+        hours_passed = int(request.headers["hours-passed"])
+    if "hours-until" in request.headers:
+        hours_until = int(request.headers["hours-until"])
+    since = datetime.datetime.now(utc) - datetime.timedelta(hours=hours_passed)
+    until = datetime.datetime.now(utc) + datetime.timedelta(hours=hours_until)
+    print(f"selecting timers since '{since}'")
+    timers = Timer.objects.filter(date__gt=since)
+    if hours_until > 0:
+        timers = timers.filter(date__lt=until)
+    timers = timers.order_by("date")
+    returndata["timers"] = []
+    for t in timers:
+        returndata["timers"].append(
+            {
+                "date": t.date.strftime(DATETIME_FORMAT),
+                "timestamp": int(t.date.timestamp()),
+                "structure": {
+                    "id": t.structure_type.id,
+                    "name": t.structure_name,
+                    "type": t.structure_type.name,
+                },
+                "stance": t.objective,
+                "owner": t.owner_name,
+                "type": t.timer_type,
+                "system": t.eve_solar_system.name,
+                "important": t.is_important,
+            }
+        )
+    return returndata
 
 
 class TimerListView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):

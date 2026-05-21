@@ -16,12 +16,18 @@ from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 
 from . import tasks
 from .models import (
+    ApiKey,
     DiscordWebhook,
     NotificationRule,
     ScheduledNotification,
     StagingSystem,
     Timer,
 )
+
+
+@admin.register(ApiKey)
+class ApiKeyAdmin(admin.ModelAdmin):
+    list_display = ("user", "secret")
 
 
 @admin.register(DiscordWebhook)

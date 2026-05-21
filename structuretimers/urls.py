@@ -8,6 +8,7 @@ app_name = "structuretimers"
 
 urlpatterns = [
     path("", views.TimerListView.as_view(), name="timer_list"),
+    path("api", views.api, name="api"),
     path("add/", views.CreateTimerView.as_view(), name="add"),
     path("remove/<int:pk>", views.RemoveTimerView.as_view(), name="delete"),
     path("edit/<int:pk>", views.EditTimerView.as_view(), name="edit"),
