@@ -6,10 +6,12 @@ from enum import IntEnum
 
 
 class EveCategoryId(IntEnum):
+    ORBITAL = 46
     STRUCTURE = 65
 
 
 class EveGroupId(IntEnum):
+    CITADEL = 1657
     CONTROL_TOWER = 365
     MERCENARY_DEN = 4810
     MOBILE_DEPOT = 1246

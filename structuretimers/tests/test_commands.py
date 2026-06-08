@@ -8,12 +8,16 @@ from eve_sde.models import ItemType
 
 from allianceauth.timerboard.models import Timer as AuthTimer
 from app_utils.django import app_labels
+from app_utils.testdata_factories import EveCharacterFactory, EveCorporationInfoFactory
 from app_utils.testing import NoSocketsTestCase
 
 from structuretimers.models import Timer
-
-from .testdata.factory import create_user
-from .testdata.fixtures import LoadTestDataMixin
+from structuretimers.tests.testdata.factory import (
+    CitadelTypeFactory,
+    EveSolarSystemLowSecFactory,
+    RefineryTypeFactory,
+    UserWithAccessFactory,
+)
 
 MODELS_PATH = "structuretimers.models"
 
@@ -21,11 +25,16 @@ if "timerboard" in app_labels():
 
     @patch(MODELS_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())
     @patch(MODELS_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    @patch("builtins.input")
-    class TestMigirateTimers(LoadTestDataMixin, NoSocketsTestCase):
+    @patch(MODELS_PATH + ".structuretimers_migrate_timers.get_input")
+    class TestMigirateTimers(NoSocketsTestCase):
         def setUp(self) -> None:
+            self.system_abune = EveSolarSystemLowSecFactory(id=30004984, name="Abune")
+            self.type_astrahus = CitadelTypeFactory(id=35832, name="Astrahus")
+            self.type_athanor = RefineryTypeFactory(id=35835, name="Athanor")
+            self.character_1 = EveCharacterFactory()
+            self.corporation_1 = EveCorporationInfoFactory()
             self.out = StringIO()
-            self.user = create_user(self.character_1)
+            self.user = UserWithAccessFactory()
             self.auth_timer = AuthTimer.objects.create(
                 system="Abune",
                 planet_moon="Near Heydieles gate",

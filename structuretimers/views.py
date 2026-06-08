@@ -29,7 +29,6 @@ from eve_sde.models import ItemType, SolarSystem
 
 from allianceauth.eveonline.evelinks import dotlan
 from allianceauth.services.hooks import get_extension_logger
-from app_utils.logging import LoggerAddTag
 from app_utils.views import (
     JSONResponseMixin,
     fontawesome_link_button_html,
@@ -37,15 +36,20 @@ from app_utils.views import (
     yesno_str,
 )
 
-from . import __title__
-from .app_settings import (
+from structuretimers import __title__
+from structuretimers.app_settings import (
     STRUCTURETIMERS_DEFAULT_PAGE_LENGTH,
     STRUCTURETIMERS_PAGING_ENABLED,
 )
-from .forms import TimerForm
-from .models import DistancesFromStaging, StagingSystem, StructureTimersEveType, Timer
+from structuretimers.forms import TimerForm
+from structuretimers.models import (
+    DistancesFromStaging,
+    StagingSystem,
+    StructureTimersEveType,
+    Timer,
+)
 
-logger = LoggerAddTag(get_extension_logger(__name__), __title__)
+logger = get_extension_logger(__name__)
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
 MAX_HOURS_PASSED = 2
 

@@ -1,5 +1,10 @@
 import datetime as dt
+from typing import Generic, TypeVar
 from unittest.mock import Mock, patch
+
+import factory
+import factory.faker
+import factory.fuzzy
 
 from django.contrib.auth.models import User
 from django.utils.timezone import now
@@ -9,7 +14,9 @@ from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter
 from allianceauth.tests.auth_utils import AuthUtils
 from app_utils.helpers import random_string
+from app_utils.testdata_factories import UserMainFactory
 
+# from structuretimers.constants import EveCategoryId, EveGroupId
 from structuretimers.models import (
     DiscordWebhook,
     DistancesFromStaging,
@@ -17,7 +24,178 @@ from structuretimers.models import (
     ScheduledNotification,
     StagingSystem,
     Timer,
+    post_save,
 )
+
+T = TypeVar("T")
+
+
+class BaseMetaFactory(Generic[T], factory.base.FactoryMetaClass):
+    def __call__(cls, *args, **kwargs) -> T:
+        return super().__call__(*args, **kwargs)
+
+
+class UserNoAccessFactory(UserMainFactory):
+    pass
+
+
+class UserWithAccessFactory(UserMainFactory):
+    """User with basic rights."""
+
+    permissions__ = [
+        "structuretimers.basic_access",
+    ]
+
+
+class UserWithCreateFactory(UserMainFactory):
+    """User with basic rights."""
+
+    permissions__ = [
+        "structuretimers.basic_access",
+        "structuretimers.create_timer",
+    ]
+
+
+class UserWithManageFactory(UserMainFactory):
+    """User with manager permission."""
+
+    permissions__ = [
+        "structuretimers.basic_access",
+        "structuretimers.manage_timer",
+    ]
+
+
+# class EveSolarSystemNullSecFactory(EveSolarSystemFactory):
+#     security_status = -1.0
+
+
+# class EveSolarSystemLowSecFactory(EveSolarSystemFactory):
+#     security_status = 0.3
+
+
+# class EveSolarSystemHighSecFactory(EveSolarSystemFactory):
+#     security_status = 0.9
+
+
+# class EveSolarSystemWSpaceFactory(EveSolarSystemFactory):
+#     id = factory.Sequence(lambda n: 31_900_000 + n)
+#     security_status = -1.0
+
+
+# class CitadelTypeFactory(EveTypeFactory):
+#     eve_group = factory.SubFactory(
+#         EveGroupFactory,
+#         eve_category__id=EveCategoryId.STRUCTURE,
+#         eve_category__name="Structure",
+#         id=EveGroupId.CITADEL,
+#         name="Citadel",
+#     )
+
+
+# class RefineryTypeFactory(EveTypeFactory):
+#     eve_group = factory.SubFactory(
+#         EveGroupFactory,
+#         eve_category__id=EveCategoryId.STRUCTURE,
+#         eve_category__name="Structure",
+#         id=EveGroupId.REFINERY,
+#         name="Refinery",
+#     )
+
+
+# class SkyhookTypeFactory(EveTypeFactory):
+#     eve_group = factory.SubFactory(
+#         EveGroupFactory,
+#         eve_category__id=EveCategoryId.ORBITAL,
+#         eve_category__name="Orbitals",
+#         id=EveGroupId.SKYHOOK,
+#         name="Skyhook",
+#     )
+#     id = 81080
+#     name = "Orbital Skyhook"
+
+
+class DiscordWebhookFactory(
+    factory.django.DjangoModelFactory, metaclass=BaseMetaFactory[DiscordWebhook]
+):
+    class Meta:
+        model = DiscordWebhook
+
+    name = factory.Sequence(lambda n: f"discord_webhook_{n}")
+    url = factory.LazyAttribute(lambda o: f"{o.name}_url")
+    is_enabled = True
+
+
+@factory.django.mute_signals(post_save)
+class NotificationRuleFactory(
+    factory.django.DjangoModelFactory, metaclass=BaseMetaFactory[NotificationRule]
+):
+    class Meta:
+        model = NotificationRule
+
+    is_enabled = True
+    scheduled_time = NotificationRule.MINUTES_15
+    trigger = NotificationRule.Trigger.SCHEDULED_TIME_REACHED
+    webhook = factory.SubFactory(DiscordWebhookFactory)
+
+
+# @factory.django.mute_signals(post_save)
+# class TimerFactory(factory.django.DjangoModelFactory, metaclass=BaseMetaFactory[Timer]):
+#     class Meta:
+#         model = Timer
+
+#     eve_solar_system = factory.SubFactory(EveSolarSystemFactory)
+#     objective = factory.fuzzy.FuzzyChoice(Timer.Objective.values)
+#     structure_type = factory.SubFactory(CitadelTypeFactory)
+#     timer_type = factory.fuzzy.FuzzyChoice([Timer.Type.ARMOR, Timer.Type.HULL])
+
+#     @factory.lazy_attribute
+#     def date(self):
+#         if self.timer_type == Timer.Type.PRELIMINARY:
+#             return None
+#         x = factory.fuzzy.FuzzyDateTime(
+#             start_dt=now() + dt.timedelta(days=1), end_dt=now() + dt.timedelta(days=7)
+#         ).fuzz()
+#         return x
+
+
+class ScheduledNotificationFactory(
+    factory.django.DjangoModelFactory, metaclass=BaseMetaFactory[ScheduledNotification]
+):
+    class Meta:
+        model = ScheduledNotification
+
+    celery_task_id = factory.fuzzy.FuzzyText(length=8)
+    notification_date = factory.LazyAttribute(
+        lambda o: o.timer_date - dt.timedelta(minutes=15)
+    )
+    timer_date = factory.fuzzy.FuzzyDateTime(
+        start_dt=now() + dt.timedelta(days=1), end_dt=now() + dt.timedelta(days=7)
+    )
+
+
+# @factory.django.mute_signals(post_save)
+# class StagingSystemFactory(
+#     factory.django.DjangoModelFactory, metaclass=BaseMetaFactory[StagingSystem]
+# ):
+#     class Meta:
+#         model = StagingSystem
+
+#     eve_solar_system = factory.SubFactory(EveSolarSystemFactory)
+
+
+# class DistancesFromStagingFactory(
+#     factory.django.DjangoModelFactory, metaclass=BaseMetaFactory[DistancesFromStaging]
+# ):
+#     class Meta:
+#         model = DistancesFromStaging
+
+#     timer = factory.SubFactory(TimerFactory)
+#     staging_system = factory.SubFactory(StagingSystemFactory)
+#     light_years = factory.fuzzy.FuzzyFloat(0.5, 50)
+#     jumps = factory.fuzzy.FuzzyInteger(1, 50)
+
+
+# -------- old factories
 
 
 def add_main_to_user(user: User, character: EveCharacter):

@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+## [3.0.0] - 2026-05-21
+
+This release adds support for Alliance Auth V5 and contains breaking changes.
+
+## Changed
+
+- BREAKING CHANGE: Removed support for Python 3.8
+- BREAKING CHANGE: Removed support for Python 3.9
+- Added support for AA5
+- Migrated to new eveuniverse version that uses the OpenAPI client
+- Removed logger tag
+- Modernized test suite
+- Moved save logic for Timer, NotificationRule and StagingSystem into signals
+- Updated dependencies
+
+## [3.0.0a2] - 2026-05-20
+
+## Changed
+
+- Added missing migration
+- Updated dependencies
+
+## [3.0.0a1] - 2026-05-01
+
+## Changed
+
+- BREAKING CHANGE: Removed support for Python 3.8
+- BREAKING CHANGE: Removed support for Python 3.9
+- Added support for AA5
+- Migrated to new eveuniverse version that uses the OpenAPI client
+- Modernized test suite
+- Moved save logic for Timer, NotificationRule and StagingSystem into signals
+
 ## [2.1.0] - 2025-10-12
 
 ### Changed
