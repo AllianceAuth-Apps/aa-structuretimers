@@ -25,7 +25,7 @@ from django.views.generic import (
     TemplateView,
     UpdateView,
 )
-from eveuniverse.models import EveSolarSystem, EveType
+from eve_sde.models import ItemType, SolarSystem
 
 from allianceauth.eveonline.evelinks import dotlan
 from allianceauth.services.hooks import get_extension_logger
@@ -41,9 +41,13 @@ from structuretimers.app_settings import (
     STRUCTURETIMERS_DEFAULT_PAGE_LENGTH,
     STRUCTURETIMERS_PAGING_ENABLED,
 )
-from structuretimers.constants import EveCategoryId, EveGroupId, EveTypeId
 from structuretimers.forms import TimerForm
-from structuretimers.models import DistancesFromStaging, StagingSystem, Timer
+from structuretimers.models import (
+    DistancesFromStaging,
+    StagingSystem,
+    StructureTimersEveType,
+    Timer,
+)
 
 logger = get_extension_logger(__name__)
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
@@ -63,7 +67,7 @@ class TimerListView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         staging_systems_qs = StagingSystem.objects.select_related(
-            "eve_solar_system", "eve_solar_system__eve_constellation__eve_region"
+            "eve_solar_system", "eve_solar_system__constellation__region"
         ).filter(eve_solar_system__isnull=False)
         selected_staging_system = None
         staging_system_name = self.request.GET.get("staging")
@@ -114,9 +118,9 @@ class TimerListDataView(
         )
         timers_qs = timers_qs.select_related(
             "eve_solar_system",
-            "eve_solar_system__eve_constellation__eve_region",
+            "eve_solar_system__constellation__region",
             "structure_type",
-            "structure_type__eve_group",
+            "structure_type__group",
             "eve_character",
             "eve_corporation",
             "eve_alliance",
@@ -154,7 +158,7 @@ class TimerListDataView(
                     "timer_type_name": timer.get_timer_type_display(),
                     "objective_name": timer.get_objective_display(),
                     "system_name": timer.eve_solar_system.name,
-                    "region_name": timer.eve_solar_system.eve_constellation.eve_region.name,
+                    "region_name": timer.eve_solar_system.constellation.region.name,
                     "structure_type_name": timer.structure_type.name,
                     "owner_name": owner_name,
                     "visibility": visibility,
@@ -246,7 +250,7 @@ class TimerListDataView(
             location += format_html("<br><em>{}</em>", timer.location_details)
 
         location += format_html(
-            "<br>{}", timer.eve_solar_system.eve_constellation.eve_region.name
+            "<br>{}", timer.eve_solar_system.constellation.region.name
         )
         return location
 
@@ -436,7 +440,7 @@ class RemoveTimerView(
 class Select2SolarSystemsView(JSONResponseMixin, ListView):
     """Dynamically generated list of solar systems for select2 widget."""
 
-    model = EveSolarSystem
+    model = SolarSystem
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -461,36 +465,14 @@ class Select2SolarSystemsView(JSONResponseMixin, ListView):
 class Select2StructureTypesView(JSONResponseMixin, ListView):
     """Dynamically generated list of types for select2 widget."""
 
-    model = EveType
+    model = ItemType
 
     def get_queryset(self):
         qs = super().get_queryset()
         term = self.request.GET.get("term")
         if not term:
             return qs.none()
-        qs = (
-            qs.filter(
-                eve_group__eve_category_id=EveCategoryId.STRUCTURE, published=True
-            )
-            | qs.filter(
-                eve_group_id__in=[
-                    EveGroupId.CONTROL_TOWER,
-                    EveGroupId.MOBILE_DEPOT,
-                    EveGroupId.MERCENARY_DEN,
-                ],
-                published=True,
-            )
-            | qs.filter(eve_group_id__in=[EveGroupId.PIRATE_FORWARD_OPERATING_BASE])
-            | qs.filter(
-                id__in=[
-                    EveTypeId.CUSTOMS_OFFICE,
-                    EveTypeId.ORBITAL_SKYHOOK,
-                    EveTypeId.IHUB,
-                    EveTypeId.TCU,
-                ]
-            )
-        )
-        return qs.distinct().filter(name__icontains=term)
+        return StructureTimersEveType.objects.filter(name__icontains=term)
 
     def get_context_data(self, **kwargs):
         if self.object_list:

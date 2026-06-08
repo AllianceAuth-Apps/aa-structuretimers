@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.db.models.functions import Lower
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from eveuniverse.models import EveRegion
+from eve_sde.models import Region
 
 from allianceauth.eveonline.models import EveAllianceInfo, EveCorporationInfo
 
@@ -20,6 +20,7 @@ from .models import (
     NotificationRule,
     ScheduledNotification,
     StagingSystem,
+    StructureTimersEveType,
     Timer,
 )
 
@@ -105,7 +106,11 @@ class NotificationRuleAdminForm(forms.ModelForm):
             cleaned_data,
             "require_space_types",
             "exclude_space_types",
-            lambda x: _get_multiselect_display(x, Timer.SpaceType.choices),
+        )
+        _validate_not_same_options_chosen(
+            cleaned_data,
+            "require_structure_types",
+            "exclude_structure_types",
         )
         if (
             cleaned_data["trigger"] == NotificationRule.Trigger.SCHEDULED_TIME_REACHED
@@ -170,6 +175,8 @@ class NotificationRuleAdmin(admin.ModelAdmin):
         "exclude_corporations",
         "require_regions",
         "exclude_regions",
+        "require_structure_types",
+        "exclude_structure_types",
     )
     fieldsets = (
         (
@@ -201,6 +208,8 @@ class NotificationRuleAdmin(admin.ModelAdmin):
                     "exclude_regions",
                     "require_space_types",
                     "exclude_space_types",
+                    "require_structure_types",
+                    "exclude_structure_types",
                     "require_visibility",
                     "exclude_visibility",
                     "is_important",
@@ -240,6 +249,16 @@ class NotificationRuleAdmin(admin.ModelAdmin):
                 "exclude_space_types",
                 self._add_to_clauses_1,
                 Timer.SpaceType.choices,
+            ),
+            (
+                "require_structure_types",
+                self._add_to_clauses_2,
+                None,
+            ),
+            (
+                "exclude_structure_types",
+                self._add_to_clauses_2,
+                None,
             ),
             ("is_important", self._add_to_clauses_3, None),
             ("is_opsec", self._add_to_clauses_3, None),
@@ -294,7 +313,9 @@ class NotificationRuleAdmin(admin.ModelAdmin):
                 Lower("corporation_name")
             )
         elif db_field.name in {"require_regions", "exclude_regions"}:
-            kwargs["queryset"] = EveRegion.objects.order_by(Lower("name"))
+            kwargs["queryset"] = Region.objects.order_by(Lower("name"))
+        elif db_field.name in {"require_structure_types", "exclude_structure_types"}:
+            kwargs["queryset"] = StructureTimersEveType.objects.order_by(Lower("name"))
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 
@@ -378,16 +399,16 @@ class StagingSystemAdmin(admin.ModelAdmin):
     list_display = ("eve_solar_system", "_region", "is_main")
     list_select_related = (
         "eve_solar_system",
-        "eve_solar_system__eve_constellation__eve_region",
+        "eve_solar_system__constellation__region",
     )
     autocomplete_fields = ["eve_solar_system"]
     ordering = ("eve_solar_system__name",)
     form = StagingSystemAdminForm
 
-    @admin.display(ordering="eve_solar_system__eve_constellation__eve_region")
+    @admin.display(ordering="eve_solar_system__constellation__region")
     def _region(self, obj) -> str:
         if obj.eve_solar_system:
-            return obj.eve_solar_system.eve_constellation.eve_region.name
+            return obj.eve_solar_system.constellation.region.name
         return ""
 
     actions = ["_recalc_timers"]

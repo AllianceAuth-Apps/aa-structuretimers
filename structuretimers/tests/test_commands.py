@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 from django.core.management import call_command
 from django.utils.timezone import now
-from eveuniverse.models import EveType
+from eve_sde.models import ItemType
 
 from allianceauth.timerboard.models import Timer as AuthTimer
 from app_utils.django import app_labels
@@ -19,14 +19,13 @@ from structuretimers.tests.testdata.factory import (
     UserWithAccessFactory,
 )
 
-PACKAGE_PATH = "structuretimers.management.commands"
 MODELS_PATH = "structuretimers.models"
 
 if "timerboard" in app_labels():
 
     @patch(MODELS_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())
     @patch(MODELS_PATH + ".STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
-    @patch(PACKAGE_PATH + ".structuretimers_migrate_timers.get_input")
+    @patch(MODELS_PATH + ".structuretimers_migrate_timers.get_input")
     class TestMigirateTimers(NoSocketsTestCase):
         def setUp(self) -> None:
             self.system_abune = EveSolarSystemLowSecFactory(id=30004984, name="Abune")
@@ -111,7 +110,7 @@ if "timerboard" in app_labels():
 
             new_timer = Timer.objects.first()
             self.assertEqual(new_timer.timer_type, Timer.Type.MOONMINING)
-            self.assertEqual(new_timer.structure_type, EveType.objects.get(id=35835))
+            self.assertEqual(new_timer.structure_type, ItemType.objects.get(id=35835))
 
         def test_abort_on_unknown_solar_system(self, mock_get_input):
             mock_get_input.return_value = "Y"

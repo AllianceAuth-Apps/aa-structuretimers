@@ -22,7 +22,7 @@ from pathlib import Path
 
 # from django.contrib.auth.models import User
 from django.utils.timezone import now
-from eveuniverse.models import EveSolarSystem, EveType
+from eve_sde.models import ItemType, SolarSystem
 
 from allianceauth.eveonline.models import EveCorporationInfo
 
@@ -31,10 +31,10 @@ from structuretimers.models import Timer
 
 MAX_TIMERS = 20
 
-structure_type_ids = EveType.objects.filter(
-    eve_group__eve_category_id=EveCategoryId.STRUCTURE, published=True
+structure_type_ids = ItemType.objects.filter(
+    group__category_id=EveCategoryId.STRUCTURE, published=True
 ).values_list("id", flat=True)
-eve_solar_system_ids = EveSolarSystem.objects.values_list("id", flat=True)
+eve_solar_system_ids = SolarSystem.objects.values_list("id", flat=True)
 owner_names = EveCorporationInfo.objects.values_list("corporation_name", flat=True)
 for _ in range(MAX_TIMERS):
     Timer.objects.create(

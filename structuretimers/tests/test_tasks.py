@@ -5,6 +5,7 @@ from celery import Task
 
 from django.test import TestCase, TransactionTestCase
 from django.utils.timezone import now
+from eve_sde.models import ItemType, SolarSystem
 
 from structuretimers.models import NotificationRule, ScheduledNotification, Timer
 from structuretimers.tasks import (
@@ -20,9 +21,16 @@ from structuretimers.tests.testdata.factory import (
     DiscordWebhookFactory,
     NotificationRuleFactory,
     ScheduledNotificationFactory,
-    StagingSystemFactory,
     TimerFactory,
 )
+
+from .testdata.factory import (
+    create_discord_webhook,
+    create_notification_rule,
+    create_staging_system,
+    create_timer,
+)
+from .testdata.load_eve_sde import load_eve_sde
 
 MODULE_PATH = "structuretimers.tasks"
 
@@ -237,6 +245,26 @@ class TestScheduleNotificationForRule(TestCase):
 @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
 @patch(MODULE_PATH + ".send_messages_for_webhook", spec=True)
 class TestSendScheduledNotification(TransactionTestCase):
+    @patch("structuretimers.models.STRUCTURETIMERS_NOTIFICATIONS_ENABLED", False)
+    def setUp(self) -> None:
+        load_eve_sde()
+        self.type_raitaru = ItemType.objects.get(id=35825)
+        self.system_abune = SolarSystem.objects.get(id=30004984)
+        self.webhook = create_discord_webhook()
+        self.webhook.clear_queue()
+        self.rule = create_notification_rule(
+            trigger=NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
+            scheduled_time=NotificationRule.MINUTES_15,
+            webhook=self.webhook,
+        )
+        self.timer = create_timer(
+            structure_name="Test_1",
+            eve_solar_system=self.system_abune,
+            structure_type=self.type_raitaru,
+            date=now() + dt.timedelta(minutes=30),
+        )
+        ScheduledNotification.objects.all().delete()
+
     def test_should_send_notification(self, mock_send_messages_for_webhook):
         # given
         rule = NotificationRuleFactory(
@@ -483,9 +511,14 @@ class TestHousekeeping(TestCase):
 class TestTimerDistancesForAllStagingSystems(TestCase):
     def test_should_calc_distances(self, mock_calc_timer_distances_for_staging_system):
         # given
-        timer = TimerFactory(date=now() + dt.timedelta(minutes=30))
-        StagingSystemFactory()
-
+        load_eve_sde()
+        timer = create_timer(
+            structure_name="Test_1",
+            eve_solar_system=SolarSystem.objects.get(name="Abune"),
+            structure_type=ItemType.objects.get(name="Astrahus"),
+            date=now() + dt.timedelta(minutes=30),
+        )
+        create_staging_system(light_years=10)
         # when
         calc_timer_distances_for_all_staging_systems(timer.pk)
 

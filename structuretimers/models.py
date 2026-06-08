@@ -17,8 +17,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from eveuniverse.helpers import meters_to_ly
-from eveuniverse.models import EveRegion, EveSolarSystem, EveType
+from eve_sde.models import ItemType, Region, SolarSystem
 
 from allianceauth.eveonline.evelinks import dotlan
 from allianceauth.eveonline.models import (
@@ -37,9 +36,11 @@ from structuretimers.app_settings import (
     STRUCTURETIMER_NOTIFICATION_SET_AVATAR,
     STRUCTURETIMERS_NOTIFICATIONS_ENABLED,
 )
+from structuretimers.eve_compat import meters_to_ly
 from structuretimers.managers import (
     DistancesFromStagingManager,
     NotificationRuleManager,
+    StructureListManager,
     TimerManager,
 )
 
@@ -344,7 +345,7 @@ class Timer(models.Model):
         WH_SPACE = "WS", _("wh space")
 
         @classmethod
-        def from_eve_solar_system(cls, eve_solar_system: Optional[EveSolarSystem]):
+        def from_eve_solar_system(cls, eve_solar_system: Optional[SolarSystem]):
             """Determine the space type of a solar system and return it."""
             if not eve_solar_system:
                 return cls.UNDEFINED
@@ -408,7 +409,7 @@ class Timer(models.Model):
         help_text="Corporation of the user who created this timer",
     )
     eve_solar_system = models.ForeignKey(
-        EveSolarSystem,
+        SolarSystem,
         on_delete=models.CASCADE,
         default=None,
         null=True,
@@ -452,7 +453,7 @@ class Timer(models.Model):
         help_text="Name of the corporation owning the structure",
     )
     structure_type = models.ForeignKey(
-        EveType, on_delete=models.CASCADE, related_name="+"
+        ItemType, on_delete=models.CASCADE, related_name="+"
     )
     structure_name = models.CharField(max_length=254, default="", blank=True)
     timer_type = models.CharField(max_length=2, choices=Type.choices, default=Type.NONE)
@@ -567,7 +568,7 @@ class Timer(models.Model):
             structure_name_text = f"{article} **{structure_type_name}**"
 
         region_name = (
-            self.eve_solar_system.eve_constellation.eve_region.name
+            self.eve_solar_system.constellation.region.name
             if self.eve_solar_system
             else ""
         )
@@ -613,40 +614,49 @@ class Timer(models.Model):
         )
 
 
-@receiver(post_save, sender=Timer)
-def handle_timer_save(
-    sender,  # pylint: disable=unused-argument
-    instance: Timer,
-    created: bool,
-    **kwargs,
-):
-    """Update timer distances from staging and schedule notifications as needed
-    after a timer was saved.
-    """
-    schedule_notifications = (
-        STRUCTURETIMERS_NOTIFICATIONS_ENABLED
-        and instance.timer_type != Timer.Type.PRELIMINARY
-    )
-    date_changed = instance.date != instance._original_date
-    needs_recalc = (
-        created
-        or date_changed
-        or instance.eve_solar_system.id != instance._original_eve_solar_system_id
-    )
-    if needs_recalc:
-        instance.distances.all().delete()
-        _task_calc_timer_distances_for_all_staging_systems().apply_async(
-            args=[instance.pk], priority=4
-        )
-    if (
-        instance.timer_type == Timer.Type.PRELIMINARY
-        and instance._original_timer_type != Timer.Type.PRELIMINARY
-    ):
-        instance.scheduled_notifications.all().delete()
-    if schedule_notifications and (created or date_changed):
-        _task_schedule_notifications_for_timer().apply_async(
-            kwargs={"timer_pk": instance.pk, "is_new": created}, priority=3
-        )
+class StructureTimersEveType(ItemType):
+    """Extends ItemType to add a manager for structure lists."""
+
+    class Meta:
+        proxy = True
+
+    objects = StructureListManager()
+
+
+# @receiver(post_save, sender=Timer)
+# def handle_timer_save(
+#     sender,  # pylint: disable=unused-argument
+#     instance: Timer,
+#     created: bool,
+#     **kwargs,
+# ):
+#     """Update timer distances from staging and schedule notifications as needed
+#     after a timer was saved.
+#     """
+#     schedule_notifications = (
+#         STRUCTURETIMERS_NOTIFICATIONS_ENABLED
+#         and instance.timer_type != Timer.Type.PRELIMINARY
+#     )
+#     date_changed = instance.date != instance._original_date
+#     needs_recalc = (
+#         created
+#         or date_changed
+#         or instance.eve_solar_system.id != instance._original_eve_solar_system_id
+#     )
+#     if needs_recalc:
+#         instance.distances.all().delete()
+#         _task_calc_timer_distances_for_all_staging_systems().apply_async(
+#             args=[instance.pk], priority=4
+#         )
+#     if (
+#         instance.timer_type == Timer.Type.PRELIMINARY
+#         and instance._original_timer_type != Timer.Type.PRELIMINARY
+#     ):
+#         instance.scheduled_notifications.all().delete()
+#     if schedule_notifications and (created or date_changed):
+#         _task_schedule_notifications_for_timer().apply_async(
+#             kwargs={"timer_pk": instance.pk, "is_new": created}, priority=3
+#         )
 
 
 class NotificationRule(models.Model):
@@ -821,7 +831,7 @@ class NotificationRule(models.Model):
         help_text="Wether the timer must be OPSEC",
     )
     require_regions = models.ManyToManyField(
-        EveRegion,
+        Region,
         blank=True,
         related_name="+",
         help_text=(
@@ -830,7 +840,7 @@ class NotificationRule(models.Model):
         ),
     )
     exclude_regions = models.ManyToManyField(
-        EveRegion,
+        Region,
         blank=True,
         related_name="+",
         help_text="Timer must NOT be created within one of the given regions",
@@ -848,6 +858,20 @@ class NotificationRule(models.Model):
         max_length=get_max_length(Timer.SpaceType.choices, None),
         blank=True,
         help_text="Space Type must NOT be one of the selected",
+    )
+    require_structure_types = models.ManyToManyField(
+        ItemType,
+        blank=True,
+        related_name="+",
+        help_text=(
+            "Structure type must be one of the selected or leave blank to match any."
+        ),
+    )
+    exclude_structure_types = models.ManyToManyField(
+        ItemType,
+        blank=True,
+        related_name="notification_rule_exclude_structure_types",
+        help_text="Structure type must NOT be one of the selected",
     )
 
     objects = NotificationRuleManager()
@@ -921,13 +945,13 @@ class NotificationRule(models.Model):
 
         if is_matching and timer.eve_solar_system and self.require_regions.exists():
             is_matching = (
-                timer.eve_solar_system.eve_constellation.eve_region
+                timer.eve_solar_system.constellation.region
                 in self.require_regions.all()
             )
 
         if is_matching and timer.eve_solar_system and self.exclude_regions.exists():
             is_matching = (
-                timer.eve_solar_system.eve_constellation.eve_region
+                timer.eve_solar_system.constellation.region
                 not in self.exclude_regions.all()
             )
         if is_matching and self.require_space_types:
@@ -936,6 +960,11 @@ class NotificationRule(models.Model):
         if is_matching and self.exclude_space_types:
             is_matching = timer.space_type not in self.exclude_space_types
 
+        if is_matching and self.require_structure_types.exists():
+            is_matching = timer.structure_type in self.require_structure_types.all()
+
+        if is_matching and self.exclude_structure_types.exists():
+            is_matching = timer.structure_type not in self.exclude_structure_types.all()
         return is_matching
 
 
@@ -997,7 +1026,7 @@ class StagingSystem(models.Model):
     """A staging system."""
 
     eve_solar_system = models.OneToOneField(
-        EveSolarSystem,
+        SolarSystem,
         on_delete=models.SET_DEFAULT,
         default=None,
         null=True,

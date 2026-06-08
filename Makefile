@@ -47,3 +47,6 @@ flake8:
 
 graph_models:
 	python ../myauth/manage.py graph_models $(package) --arrow-shape normal -o $(appname)_models.png
+
+create_testdata:
+	python ../myauth/manage.py test $(package).tests.testdata.create_eve_sde --keepdb -v 2

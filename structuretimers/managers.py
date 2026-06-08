@@ -9,6 +9,7 @@ from django.db import models
 from django.utils.timezone import now
 
 from .app_settings import STRUCTURETIMERS_TIMERS_OBSOLETE_AFTER_DAYS
+from .constants import EveCategoryId, EveGroupId, EveTypeId
 
 
 class NotificationRuleQuerySet(models.QuerySet):
@@ -33,12 +34,41 @@ NotificationRuleManager = NotificationRuleManagerBase.from_queryset(
 )
 
 
+class StructureListManager(models.Manager):
+    def get_queryset(self):
+        """Return new queryset based on current queryset,
+        which only contains structure types.
+        """
+        qs = super().get_queryset()
+        qs = (
+            qs.filter(group__category_id=EveCategoryId.STRUCTURE, published=True)
+            | qs.filter(
+                group_id__in=[
+                    EveGroupId.CONTROL_TOWER,
+                    EveGroupId.MOBILE_DEPOT,
+                    EveGroupId.MERCENARY_DEN,
+                ],
+                published=True,
+            )
+            | qs.filter(group_id__in=[EveGroupId.PIRATE_FORWARD_OPERATING_BASE])
+            | qs.filter(
+                id__in=[
+                    EveTypeId.CUSTOMS_OFFICE,
+                    EveTypeId.ORBITAL_SKYHOOK,
+                    EveTypeId.IHUB,
+                    EveTypeId.TCU,
+                ]
+            )
+        )
+        return qs.distinct()
+
+
 class TimerQuerySet(models.QuerySet):
     def select_related_for_matching(self) -> models.QuerySet:
         """Apply select related for matching."""
         return self.select_related(
             "eve_solar_system",
-            "eve_solar_system__eve_constellation__eve_region",
+            "eve_solar_system__constellation__region",
             "eve_corporation",
             "eve_alliance",
         )

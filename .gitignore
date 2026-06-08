@@ -13,5 +13,6 @@ coverage.xml
 /htmlcov/
 .mypy_cache
 alliance_auth.sqlite3
+.venv*
 .env
 .temp/
