@@ -14,20 +14,6 @@ from allianceauth.notifications import notify
 from allianceauth.services.hooks import get_extension_logger
 from allianceauth.services.tasks import QueueOnce
 
-try:
-    from app_utils.esi import retry_task_on_esi_error_and_offline
-except ImportError:
-    from contextlib import contextmanager
-
-    from app_utils.esi import retry_task_if_esi_is_down
-
-    @contextmanager
-    def retry_task_on_esi_error_and_offline(task, info: str = ""):
-        """Backward-compatible fallback for older app_utils releases."""
-        retry_task_if_esi_is_down(task)
-        yield
-
-
 from structuretimers import __title__
 from structuretimers.models import (
     DiscordWebhook,
