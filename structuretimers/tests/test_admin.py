@@ -1,11 +1,14 @@
-from unittest import skip
+from http import HTTPStatus
 
-from django.contrib.auth.models import User
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from django.urls import reverse
-from django_webtest import WebTest
 
-from app_utils.testdata_factories import EveCorporationInfoFactory
+from app_utils.testdata_factories import (
+    EveAllianceInfoFactory,
+    EveCorporationInfoFactory,
+    UserFactory,
+)
+from app_utils.testing import NoSocketsTestCase
 
 from structuretimers.admin import _get_multiselect_display
 from structuretimers.models import NotificationRule, StagingSystem, Timer
@@ -18,7 +21,7 @@ from .testdata.factory import (
 )
 
 
-class TestNotificationRule_ChangeList(WebTest):
+class TestNotificationRule_ChangeList(NoSocketsTestCase):
     def test_can_open_page_normally(self):
         # given
         webhook = DiscordWebhookFactory()
@@ -45,123 +48,142 @@ class TestNotificationRule_ChangeList(WebTest):
             is_important=NotificationRule.Clause.EXCLUDED,
             webhook=webhook,
         )
-        user = User.objects.create_superuser(
-            "Bruce Wayne", "bruce@example.com", "password"
-        )
-        self.app.set_user(user)
+        user = UserFactory(is_staff=True, is_superuser=True)
+        self.client.force_login(user)
 
         # user tries to add new notification rule
-        add_page = self.app.get(
+        add_page = self.client.get(
             reverse("admin:structuretimers_notificationrule_changelist")
         )
-        self.assertEqual(add_page.status_code, 200)
+        self.assertEqual(add_page.status_code, HTTPStatus.OK)
 
 
-class TestNotificationRule_Validations(WebTest):
+class TestNotificationRule_Validations(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.webhook = DiscordWebhookFactory()
-        cls.user = User.objects.create_superuser(
-            "Bruce Wayne", "bruce@example.com", "password"
-        )
-        cls.url_add = reverse("admin:structuretimers_notificationrule_add")
-        cls.url_changelist = reverse(
+        cls.add_url = reverse("admin:structuretimers_notificationrule_add")
+        cls.changelist_url = reverse(
             "admin:structuretimers_notificationrule_changelist"
         )
+        cls.form_data = {
+            "is_important": NotificationRule.Clause.ANY,
+            "is_opsec": NotificationRule.Clause.ANY,
+            "ping_type": NotificationRule.PingType.NONE,
+            "scheduled_time": NotificationRule.MINUTES_15,
+            "trigger": NotificationRule.Trigger.SCHEDULED_TIME_REACHED,
+            "webhook": cls.webhook.pk,
+            "_save": "Save",
+        }
+        cls.user = UserFactory(is_staff=True, is_superuser=True)
 
-    def _open_page(self) -> object:
-        # login
-        self.app.set_user(self.user)
+    def setUp(self):
+        self.client.force_login(self.user)
 
-        # user tries to add new notification rule
-        add_page = self.app.get(self.url_add)
-        self.assertEqual(add_page.status_code, 200)
-        form = add_page.forms["notificationrule_form"]
-        form["trigger"] = NotificationRule.Trigger.SCHEDULED_TIME_REACHED
-        form["scheduled_time"] = NotificationRule.MINUTES_10
-        form["webhook"] = self.webhook.pk
-        return form
+    def test_can_create_rule(self):
+        # given
+        form_data = self.form_data | {}
 
-    # FIXME
-    @skip("No longer works with sqlite")
-    def test_no_errors(self):
-        form = self._open_page()
-        response = form.submit()
+        # when
+        response = self.client.post(self.add_url, data=form_data)
 
-        # assert results
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, self.url_changelist)
+        # then
+        self.assertRedirects(response, self.changelist_url)
         self.assertEqual(NotificationRule.objects.count(), 1)
 
     def test_can_not_have_same_options_timer_types(self):
-        form = self._open_page()
-        form["require_timer_types"] = [Timer.Type.ANCHORING, Timer.Type.HULL]
-        form["exclude_timer_types"] = [Timer.Type.ANCHORING, Timer.Type.ARMOR]
-        response = form.submit()
+        # given
+        form_data = self.form_data | {
+            "require_timer_types": [Timer.Type.ANCHORING, Timer.Type.HULL],
+            "exclude_timer_types": [Timer.Type.ANCHORING, Timer.Type.ARMOR],
+        }
 
-        # assert results
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Please correct the error below", response.text)
+        # when
+        response = self.client.post(self.add_url, data=form_data)
+
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(NotificationRule.objects.count(), 0)
+        form = response.context["adminform"].form
+        self.assertTrue(form.errors)
 
     def test_can_not_have_same_options_objectives(self):
-        form = self._open_page()
-        form["require_objectives"] = [Timer.Objective.FRIENDLY, Timer.Objective.HOSTILE]
-        form["exclude_objectives"] = [Timer.Objective.FRIENDLY, Timer.Objective.NEUTRAL]
-        response = form.submit()
+        # given
+        form_data = self.form_data | {
+            "require_objectives": [Timer.Objective.FRIENDLY, Timer.Objective.HOSTILE],
+            "exclude_objectives": [Timer.Objective.FRIENDLY, Timer.Objective.NEUTRAL],
+        }
 
-        # assert results
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Please correct the error below", response.text)
+        # when
+        response = self.client.post(self.add_url, data=form_data)
+
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(NotificationRule.objects.count(), 0)
+        form = response.context["adminform"].form
+        self.assertTrue(form.errors)
 
     def test_can_not_have_same_options_visibility(self):
-        form = self._open_page()
-        form["require_visibility"] = [Timer.Visibility.CORPORATION]
-        form["exclude_visibility"] = [Timer.Visibility.CORPORATION]
-        response = form.submit()
+        # given
+        form_data = self.form_data | {
+            "require_visibility": [Timer.Visibility.CORPORATION],
+            "exclude_visibility": [Timer.Visibility.CORPORATION],
+        }
 
-        # assert results
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("Please correct the error below", response.text)
+        # when
+        response = self.client.post(self.add_url, data=form_data)
+
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(NotificationRule.objects.count(), 0)
+        form = response.context["adminform"].form
+        self.assertTrue(form.errors)
 
-    # FIXME: Fix test
-    # def test_can_not_have_same_options_corporations(self):
-    #     form = self._open_page()
-    #     corp_1 = EveCorporationInfoFactory()
-    #     corp_2 = EveCorporationInfoFactory()
-    #     form["require_corporations"] = [corp_1.pk, corp_2.pk]
-    #     form["exclude_corporations"] = [corp_1.pk]
-    #     response = form.submit()
+    def test_can_not_have_same_options_corporations(self):
+        # given
+        corp_1 = EveCorporationInfoFactory()
+        corp_2 = EveCorporationInfoFactory()
 
-    #     # assert results
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertIn("Please correct the error below", response.text)
-    #     self.assertEqual(NotificationRule.objects.count(), 0)
+        form_data = self.form_data | {
+            "require_corporations": [corp_1.pk, corp_2.pk],
+            "exclude_corporations": [corp_1.pk],
+        }
 
-    # FIXME: Fix test
-    # def test_can_not_have_same_options_alliances(self):
-    #     form = self._open_page()
-    #     all_1 = EveAllianceInfoFactory()
-    #     all_2 = EveAllianceInfoFactory()
-    #     form["require_alliances"] = [all_1.pk, all_2.pk]
-    #     form["exclude_alliances"] = [all_1.pk]
-    #     response = form.submit()
+        # when
+        response = self.client.post(self.add_url, data=form_data)
 
-    #     # assert results
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertIn("Please correct the error below", response.text)
-    #     self.assertEqual(NotificationRule.objects.count(), 0)
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(NotificationRule.objects.count(), 0)
+        form = response.context["adminform"].form
+        self.assertTrue(form.errors)
+
+    def test_can_not_have_same_options_alliances(self):
+        # given
+        all_1 = EveAllianceInfoFactory()
+        all_2 = EveAllianceInfoFactory()
+        form_data = self.form_data | {
+            "require_alliances": [all_1.pk, all_2.pk],
+            "exclude_alliances": [all_1.pk],
+        }
+
+        # when
+        response = self.client.post(self.add_url, data=form_data)
+
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(NotificationRule.objects.count(), 0)
+        form = response.context["adminform"].form
+        self.assertTrue(form.errors)
 
 
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
-class TestStagingSystemAdmin(TestCase):
+class TestStagingSystemAdmin(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_superuser("Bruce Wayne")
+        cls.user = UserFactory(is_staff=True, is_superuser=True)
         cls.url_add = reverse("admin:structuretimers_stagingsystem_add")
 
     def test_should_create_new_staging_system(self):
@@ -173,7 +195,7 @@ class TestStagingSystemAdmin(TestCase):
         res = self.client.post(self.url_add, data={"eve_solar_system": solar_system.pk})
 
         # then
-        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertEqual(StagingSystem.objects.count(), 1)
         obj = StagingSystem.objects.first()
         self.assertEqual(obj.eve_solar_system, solar_system)
@@ -193,14 +215,14 @@ class TestStagingSystemAdmin(TestCase):
         )
 
         # then
-        self.assertEqual(res.status_code, 302)
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertEqual(
             StagingSystem.objects.filter(is_main=True).get().eve_solar_system,
             solar_system_2,
         )
 
 
-class TestGetMultiselectDisplay(TestCase):
+class TestGetMultiselectDisplay(NoSocketsTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()

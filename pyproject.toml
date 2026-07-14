@@ -36,7 +36,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["coverage", "factory_boy", "django-webtest"]
+test = ["coverage", "factory_boy"]
 
 [project.urls]
 Homepage = "https://gitlab.com/ErikKalkoken/aa-structuretimers"
@@ -60,7 +60,7 @@ sections = [
     "LOCALFOLDER",
 ]
 known_allianceauth = ["allianceauth", "app_utils"]
-known_django = ["django", "django_webtest", "esi", "eveuniverse"]
+known_django = ["django", "esi", "eveuniverse"]
 
 [tool.pylint.'MASTER']
 ignore-patterns = ["__init__.py", "auth_hooks.py", "apps.py", "admin.py"]

@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unpublished
 
+### Changed
+
+- Removed dependency to django-webtest
+- Fixed broken UI tests
+- Minor refactoring in views
+
 ## [3.0.0] - 2026-05-21
 
 This release adds support for Alliance Auth V5 and contains breaking changes.
 
-## Changed
+### Changed
 
 - BREAKING CHANGE: Removed support for Python 3.8
 - BREAKING CHANGE: Removed support for Python 3.9
@@ -24,14 +30,14 @@ This release adds support for Alliance Auth V5 and contains breaking changes.
 
 ## [3.0.0a2] - 2026-05-20
 
-## Changed
+### Changed
 
 - Added missing migration
 - Updated dependencies
 
 ## [3.0.0a1] - 2026-05-01
 
-## Changed
+### Changed
 
 - BREAKING CHANGE: Removed support for Python 3.8
 - BREAKING CHANGE: Removed support for Python 3.9
