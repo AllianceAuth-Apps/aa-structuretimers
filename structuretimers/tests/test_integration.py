@@ -1,13 +1,11 @@
 from datetime import timedelta
 from http import HTTPStatus
+from typing import Any, Dict
 from unittest.mock import Mock, patch
-
-from webtest.app import AppError
 
 from django.test import override_settings
 from django.urls import reverse
 from django.utils.timezone import now
-from django_webtest import WebTest
 
 from app_utils.testing import NoSocketsTestCase
 
@@ -34,245 +32,243 @@ TASKS_PATH = "structuretimers.tasks"
 
 @patch(MODELS_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())
 @override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
-class TestUI(WebTest):
-    # @classmethod
-    # def setUp(self) -> None:
-    #     timer = TimerFactory(
-    #         structure_name="Timer 1",
-    #         date=now() + timedelta(hours=4),
-    #         eve_character=self.character_2,
-    #         eve_corporation=self.corporation_1,
-    #         user=self.user_create,
-    #         eve_solar_system=self.system_abune,
-    #         structure_type=self.type_astrahus,
-    #     )
-    #     timer = TimerFactory(
-    #         structure_name="Timer 2",
-    #         date=now() - timedelta(hours=8),
-    #         eve_character=self.character_2,
-    #         eve_corporation=self.corporation_1,
-    #         user=self.user_create,
-    #         eve_solar_system=self.system_abune,
-    #         structure_type=self.type_raitaru,
-    #     )
-    #     self.timer_3 = TimerFactory(
-    #         structure_name="Timer 3",
-    #         date=now() - timedelta(hours=8),
-    #         eve_character=self.character_2,
-    #         eve_corporation=self.corporation_1,
-    #         user=self.user_create,
-    #         eve_solar_system=self.system_enaluri,
-    #         structure_type=self.type_astrahus,
-    #     )
+class TestCreateNewTimer(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.add_timer_url = reverse("structuretimers:add")
+        cls.timer_list_url = reverse("structuretimers:timer_list")
 
     def test_user_with_permission_can_add_timer(self):
-        # setup
+        # given
         solar_system = EveSolarSystemLowSecFactory()
         structure_type = CitadelTypeFactory()
+        form_data = {
+            "structure_name": "Timer 4",
+            "eve_solar_system_2": [str(solar_system.id)],
+            "structure_type_2": [str(structure_type.id)],
+            "timer_type": Timer.Type.ANCHORING,
+            "days_left": 1,
+            "hours_left": 2,
+            "minutes_left": 3,
+            "objective": Timer.Objective.HOSTILE,
+            "visibility": Timer.Visibility.UNRESTRICTED,
+            "_save": "Save",
+        }
+        self.client.force_login(UserWithCreateFactory())
 
-        # login
-        self.app.set_user(UserWithCreateFactory())
-
-        # user opens timerboard
-        timerboard = self.app.get(reverse("structuretimers:timer_list"))
-        self.assertEqual(timerboard.status_code, HTTPStatus.OK)
-
-        # user clicks on "Add Timer"
-        add_timer = timerboard.click(href=reverse("structuretimers:add"))
-        self.assertEqual(add_timer.status_code, HTTPStatus.OK)
-
-        # user enters data and clicks create
-        form = add_timer.forms["add-timer-form"]
-        form["structure_name"] = "Timer 4"
-        form["eve_solar_system_2"].force_value([str(solar_system.id)])
-        form["structure_type_2"].force_value([str(structure_type.id)])
-        form["timer_type"] = Timer.Type.ANCHORING
-        form["days_left"] = 1
-        form["hours_left"] = 2
-        form["minutes_left"] = 3
-        response = form.submit()
+        # when
+        response = self.client.post(self.add_timer_url, data=form_data)
 
         # assert results
-        timer_date = now() + timedelta(days=1, hours=2, minutes=3)
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertEqual(response.url, reverse("structuretimers:timer_list"))
+        self.assertRedirects(response, self.timer_list_url)
         obj = Timer.objects.get(structure_name="Timer 4")
         self.assertEqual(obj.eve_solar_system, solar_system)
         self.assertEqual(obj.structure_type, structure_type)
         self.assertEqual(obj.timer_type, Timer.Type.ANCHORING)
+        timer_date = now() + timedelta(days=1, hours=2, minutes=3)
         self.assertAlmostEqual(obj.date, timer_date, delta=timedelta(seconds=10))
 
     def test_user_without_permission_can_not_add_timer(self):
-        # login
-        self.app.set_user(UserNoAccessFactory())
+        # given
+        solar_system = EveSolarSystemLowSecFactory()
+        structure_type = CitadelTypeFactory()
+        form_data = {
+            "structure_name": "Timer 4",
+            "eve_solar_system_2": [str(solar_system.id)],
+            "structure_type_2": [str(structure_type.id)],
+            "timer_type": Timer.Type.ANCHORING,
+            "days_left": 1,
+            "hours_left": 2,
+            "minutes_left": 3,
+            "objective": Timer.Objective.HOSTILE,
+            "visibility": Timer.Visibility.UNRESTRICTED,
+            "_save": "Save",
+        }
+        self.client.force_login(UserNoAccessFactory())
 
-        # Try to access page
-        with self.assertRaises(AppError):
-            self.app.get(reverse("structuretimers:timer_list"))
+        # when
+        response = self.client.post(self.add_timer_url, data=form_data)
 
-    def test_user_with_permission_can_edit_his_timer(self):
-        # setup
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+
+
+@patch(MODELS_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())
+@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
+class TestEditTimer(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.timer_list_url = reverse("structuretimers:timer_list")
+
+    def test_user_with_permission_can_open_page(self):
+        # given
         user = UserWithCreateFactory()
-        timer = TimerFactory(user=user)
+        timer: Timer = TimerFactory(user=user)
+        self.client.force_login(user)
 
-        # login
-        self.app.set_user(user)
+        # when
+        response = self.client.get(reverse("structuretimers:edit", args=[timer.pk]))
 
-        # user opens timerboard
-        timerboard = self.app.get(reverse("structuretimers:timer_list"))
-        self.assertEqual(timerboard.status_code, HTTPStatus.OK)
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(response, "structuretimers/timer_edit.html")
+        self.assertContains(response, timer.eve_solar_system.name)
 
-        # user clicks on "Edit Timer" for timer
-        edit_timer = self.app.get(reverse("structuretimers:edit", args=[timer.pk]))
-        self.assertEqual(edit_timer.status_code, HTTPStatus.OK)
+    def test_user_can_change_his_own_timer(self):
+        # given
+        user = UserWithCreateFactory()
+        timer: Timer = TimerFactory(user=user)
+        self.client.force_login(user)
 
-        # user enters data and clicks create
-        form = edit_timer.forms["add-timer-form"]
-        form["owner_name"] = "The Boys"
-        response = form.submit()
+        owner_name = "The Boys"
+        form_data = _make_form_data_from_timer(timer) | {
+            "owner_name": owner_name,
+        }
+
+        # when
+        response = self.client.post(
+            reverse("structuretimers:edit", args=[timer.pk]), data=form_data
+        )
+
+        # then
+        self.assertRedirects(response, self.timer_list_url)
         timer.refresh_from_db()
+        self.assertEqual(timer.owner_name, owner_name)
 
-        # assert results
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertEqual(response.url, reverse("structuretimers:timer_list"))
-        self.assertEqual(timer.owner_name, "The Boys")
-
-    def test_user_without_permission_can_not_edit_a_timer(self):
-        # setup
-        user = UserWithAccessFactory()
-        timer = TimerFactory()
-
-        # login
-        self.app.set_user(user)
-
-        # user tries to access page for edit directly
-        with self.assertRaises(AppError):
-            self.app.get(reverse("structuretimers:edit", args=[timer.pk]))
-
-    def test_user_with_normal_permission_can_not_edit_other_timers(self):
-        # setup
+    def test_user_without_permission_can_not_open_page(self):
+        # given
         user = UserWithCreateFactory()
         timer = TimerFactory()
+        self.client.force_login(user)
 
-        # login
-        self.app.set_user(user)
+        # when
+        response = self.client.get(reverse("structuretimers:edit", args=[timer.pk]))
 
-        # user tries to access page for edit directly
-        with self.assertRaises(AppError):
-            self.app.get(reverse("structuretimers:edit", args=[timer.pk]))
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
 
     def test_manager_can_edit_other_timers(self):
-        # setup
+        # given
         user = UserWithManageFactory()
-        timer = TimerFactory()
+        timer: Timer = TimerFactory()
+        self.client.force_login(user)
 
-        # login
-        self.app.set_user(user)
+        owner_name = "The Boys"
+        form_data = _make_form_data_from_timer(timer) | {
+            "owner_name": owner_name,
+        }
 
-        # user opens timerboard
-        timerboard = self.app.get(reverse("structuretimers:timer_list"))
-        self.assertEqual(timerboard.status_code, HTTPStatus.OK)
+        # when
+        response = self.client.post(
+            reverse("structuretimers:edit", args=[timer.pk]), data=form_data
+        )
 
-        # user clicks on "Edit Timer" for timer 1
-        edit_timer = self.app.get(reverse("structuretimers:edit", args=[timer.pk]))
-        self.assertEqual(edit_timer.status_code, HTTPStatus.OK)
-
-        # user enters data and clicks create
-        form = edit_timer.forms["add-timer-form"]
-        form["owner_name"] = "The Boys"
-        response = form.submit()
+        # then
+        self.assertRedirects(response, self.timer_list_url)
         timer.refresh_from_db()
-
-        # assert results
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertEqual(response.url, reverse("structuretimers:timer_list"))
-        self.assertEqual(timer.owner_name, "The Boys")
+        self.assertEqual(timer.owner_name, owner_name)
 
     def test_manager_can_not_edit_other_timers_when_corp_restricted(self):
-        # setup
+        # given
+        timer: Timer = TimerFactory(visibility=Timer.Visibility.CORPORATION)
         user = UserWithManageFactory()
-        timer = TimerFactory(visibility=Timer.Visibility.CORPORATION)
+        self.client.force_login(user)
 
-        # login
-        self.app.set_user(user)
+        # when
+        response = self.client.get(reverse("structuretimers:edit", args=[timer.pk]))
 
-        # user tries to access page for edit directly
-        with self.assertRaises(AppError):
-            self.app.get(reverse("structuretimers:edit", args=[timer.pk]))
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
 
     def test_manager_can_not_edit_other_timers_when_opsec(self):
         # setup
-        user = UserWithManageFactory()
         timer = TimerFactory(is_opsec=True)
-
-        # login
-        self.app.set_user(user)
-
-        # user tries to access page for edit directly
-        with self.assertRaises(AppError):
-            self.app.get(reverse("structuretimers:edit", args=[timer.pk]))
-
-    def test_manager_can_delete_timer_from_other(self):
-        # setup
         user = UserWithManageFactory()
-        timer = TimerFactory()
+        self.client.force_login(user)
 
-        # login
-        self.app.set_user(user)
+        # when
+        response = self.client.get(reverse("structuretimers:edit", args=[timer.pk]))
 
-        # user opens timerboard
-        timerboard = self.app.get(reverse("structuretimers:timer_list"))
-        self.assertEqual(timerboard.status_code, HTTPStatus.OK)
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
 
-        # user clicks on "Delete Timer" for timer 2
-        confirm_page = self.app.get(reverse("structuretimers:delete", args=[timer.pk]))
-        self.assertEqual(confirm_page.status_code, HTTPStatus.OK)
 
-        # user enters data and clicks create
-        form = confirm_page.forms["confirm-delete-form"]
-        response = form.submit()
+def _make_form_data_from_timer(timer: Timer) -> Dict[str, Any]:
+    form_data = {
+        "date": timer.date.isoformat(),
+        "details_image_url": timer.details_image_url or "",
+        "details_notes": timer.details_notes or "",
+        "eve_alliance": timer.eve_alliance.pk if timer.eve_alliance else "",
+        "eve_character": timer.eve_character.pk if timer.eve_character else "",
+        "eve_corporation": timer.eve_corporation.pk if timer.eve_corporation else "",
+        "eve_solar_system_2": [timer.eve_solar_system.pk],
+        "is_important": timer.is_important,
+        "is_opsec": timer.is_opsec,
+        "location_details": timer.location_details or "",
+        "objective": timer.objective,
+        "owner_name": timer.owner_name,
+        "structure_name": timer.structure_name,
+        "structure_type_2": [timer.structure_type.pk],
+        "timer_type": timer.timer_type,
+        # "user": timer.user.pk if timer.user else "",
+        "visibility": timer.visibility,
+    }
+    return form_data
 
-        # assert results
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertEqual(response.url, reverse("structuretimers:timer_list"))
-        self.assertFalse(Timer.objects.filter(pk=timer.pk).exists())
+
+@patch(MODELS_PATH + "._task_calc_timer_distances_for_all_staging_systems", Mock())
+@override_settings(CELERY_ALWAYS_EAGER=True, CELERY_EAGER_PROPAGATES_EXCEPTIONS=True)
+class TestDeleteTimer(NoSocketsTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.timer_list_url = reverse("structuretimers:timer_list")
 
     def test_user_can_delete_own_timer(self):
-        # setup
+        # given
         user = UserWithCreateFactory()
-        timer = TimerFactory(user=user)
+        timer: Timer = TimerFactory(user=user)
+        self.client.force_login(user)
 
-        # login
-        self.app.set_user(user)
+        # when
+        response = self.client.get(reverse("structuretimers:delete", args=[timer.pk]))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
-        # user opens timerboard
-        timerboard = self.app.get(reverse("structuretimers:timer_list"))
-        self.assertEqual(timerboard.status_code, HTTPStatus.OK)
+        response = self.client.post(reverse("structuretimers:delete", args=[timer.pk]))
 
-        # user clicks on "Delete Timer" for timer 2
-        confirm_page = self.app.get(reverse("structuretimers:delete", args=[timer.pk]))
-        self.assertEqual(confirm_page.status_code, HTTPStatus.OK)
-
-        # user enters data and clicks create
-        form = confirm_page.forms["confirm-delete-form"]
-        response = form.submit()
-
-        # assert results
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        self.assertEqual(response.url, reverse("structuretimers:timer_list"))
+        # then
+        self.assertRedirects(response, self.timer_list_url)
         self.assertFalse(Timer.objects.filter(pk=timer.pk).exists())
 
-    def test_user_can_not_delete_timer_from_others(self):
-        # setup
+    def test_user_can_not_delete_other_timer(self):
+        # given
         user = UserWithCreateFactory()
-        timer = TimerFactory()
+        timer: Timer = TimerFactory()
+        self.client.force_login(user)
 
-        # login
-        self.app.set_user(user)
+        # when
+        response = self.client.get(reverse("structuretimers:delete", args=[timer.pk]))
 
-        # user tries to access page for edit directly
-        with self.assertRaises(AppError):
-            self.app.get(reverse("structuretimers:delete", args=[timer.pk]))
+        # then
+        self.assertEqual(response.status_code, HTTPStatus.FORBIDDEN)
+
+    def test_manager_can_delete_timer_from_other(self):
+        # given
+        user = UserWithManageFactory()
+        timer: Timer = TimerFactory()
+        self.client.force_login(user)
+
+        # when
+        response = self.client.get(reverse("structuretimers:delete", args=[timer.pk]))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+        response = self.client.post(reverse("structuretimers:delete", args=[timer.pk]))
+
+        # then
+        self.assertRedirects(response, self.timer_list_url)
+        self.assertFalse(Timer.objects.filter(pk=timer.pk).exists())
 
 
 """

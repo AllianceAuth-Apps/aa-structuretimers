@@ -293,11 +293,16 @@ class TimerListDataView(
         actions += (
             format_html(
                 '<button type="button" id="timerboardBtnDetails" '
-                f'class="btn btn-{button_type}" title="{title}"'
-                f"{data_toggle}"
-                f'data-timerpk="{timer.pk}"{disabled_html}>'
+                'class="btn btn-{}" title="{}"'
+                "{}"
+                'data-timerpk="{}"{}>'
                 '<i class="fas fa-search-plus"></i>'
-                "</button>"
+                "</button>",
+                button_type,
+                title,
+                mark_safe(data_toggle),
+                timer.pk,
+                mark_safe(disabled_html),
             )
             + "&nbsp;"
         )
@@ -387,18 +392,22 @@ class CreateTimerView(TimerManagementView, AddUpdateMixin, CreateView):
         return result
 
 
+# FIXME: User without permission can still post to edit timers directly
+
+
 class EditTimerMixin:
     permission_required = "structuretimers.basic_access"
 
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)
         if response.status_code == 200:
-            if (
-                not self.object.user_can_edit(self.request.user)
-                or not Timer.objects.filter(pk=self.object.pk)
+            can_view = (
+                Timer.objects.filter(pk=self.object.pk)
                 .visible_to_user(self.request.user)
                 .exists()
-            ):
+            )
+            can_edit = self.object.user_can_edit(self.request.user)
+            if not can_view or not can_edit:
                 raise PermissionDenied()
 
         return response
@@ -422,6 +431,9 @@ class CopyTimerView(CreateTimerView):
         new_obj.date = None
         kwargs["instance"] = deepcopy(new_obj)
         return kwargs
+
+
+# FIXME: User without permission can still post to delete timers directly
 
 
 class RemoveTimerView(
