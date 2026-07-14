@@ -293,11 +293,16 @@ class TimerListDataView(
         actions += (
             format_html(
                 '<button type="button" id="timerboardBtnDetails" '
-                f'class="btn btn-{button_type}" title="{title}"'
-                f"{data_toggle}"
-                f'data-timerpk="{timer.pk}"{disabled_html}>'
+                'class="btn btn-{}" title="{}"'
+                "{}"
+                'data-timerpk="{}"{}>'
                 '<i class="fas fa-search-plus"></i>'
-                "</button>"
+                "</button>",
+                button_type,
+                title,
+                mark_safe(data_toggle),
+                timer.pk,
+                mark_safe(disabled_html),
             )
             + "&nbsp;"
         )

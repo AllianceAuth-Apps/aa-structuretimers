@@ -10,6 +10,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from eveuniverse.models import EveSolarSystem, EveType
@@ -28,7 +29,7 @@ DATETIME_FORMAT = "%Y-%m-%d %H:%M"
 class TimerForm(forms.ModelForm):
     """Form for timers."""
 
-    ASTERISK_HTML = '<i class="fas fa-asterisk"></i>'
+    ASTERISK_HTML = mark_safe('<i class="fas fa-asterisk"></i>')
     TIME_REMAINING_WIDGET_ATTRS = {
         "class": "timer-time-remaining-field",
     }
@@ -38,12 +39,12 @@ class TimerForm(forms.ModelForm):
     )
     eve_solar_system_2 = forms.CharField(
         required=True,
-        label=_(format_html(f"Solar System {ASTERISK_HTML}")),
+        label=format_html("{} {}", _("Solar System"), ASTERISK_HTML),
         widget=forms.Select(attrs={"class": "select2-solar-systems"}),
     )
     structure_type_2 = forms.CharField(
         required=True,
-        label=_(format_html(f"Structure Type {ASTERISK_HTML}")),
+        label=format_html("{} {}", _("Structure Type"), ASTERISK_HTML),
         widget=forms.Select(attrs={"class": "select2-structure-types"}),
     )
     objective = forms.ChoiceField(
