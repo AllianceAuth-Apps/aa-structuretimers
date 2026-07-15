@@ -15,7 +15,6 @@ classifiers = [
     "Framework :: Django :: 4.2",
     "Framework :: Django :: 5.2",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.10",
@@ -25,7 +24,7 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
 ]
 dependencies = [
-    "allianceauth-app-utils>=1.31",
+    "allianceauth-app-utils>=1.33.2",
     "allianceauth>=4,<6",
     "dhooks_lite>=1.1",
     "django-eveuniverse>=2",
@@ -39,10 +38,7 @@ dependencies = [
 test = ["coverage", "factory_boy"]
 
 [project.urls]
-Homepage = "https://gitlab.com/ErikKalkoken/aa-structuretimers"
-Source = "https://gitlab.com/ErikKalkoken/aa-structuretimers"
-Changelog = "https://gitlab.com/ErikKalkoken/aa-structuretimers/-/blob/master/CHANGELOG.md"
-Tracker = "https://gitlab.com/ErikKalkoken/aa-structuretimers/-/issues"
+Homepage = "https://github.com/AllianceAuth-Apps/aa-structuretimers"
 
 [tool.flit.module]
 name = "structuretimers"
