@@ -5,9 +5,9 @@ An app for keeping track of Eve Online structure timers with Alliance Auth and D
 [![release](https://img.shields.io/pypi/v/aa-structuretimers?label=release)](https://pypi.org/project/aa-structuretimers/)
 [![python](https://img.shields.io/pypi/pyversions/aa-structuretimers)](https://pypi.org/project/aa-structuretimers/)
 [![django](https://img.shields.io/pypi/djversions/aa-structuretimers?label=django)](https://pypi.org/project/aa-structuretimers/)
-[![pipeline](https://gitlab.com/ErikKalkoken/aa-structuretimers/badges/master/pipeline.svg)](https://gitlab.com/ErikKalkoken/aa-structuretimers/-/pipelines)
-[![codecov](https://codecov.io/gl/ErikKalkoken/aa-structuretimers/branch/master/graph/badge.svg?token=J4PKTXSOBM)](https://codecov.io/gl/ErikKalkoken/aa-structuretimers)
-[![license](https://img.shields.io/badge/license-MIT-green)](https://gitlab.com/ErikKalkoken/aa-structuretimers/-/blob/master/LICENSE)
+[![CI/CD Pipeline](https://github.com/AllianceAuth-Apps/aa-structuretimers/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/AllianceAuth-Apps/aa-structuretimers/actions/workflows/ci-cd.yaml)
+[![codecov](https://codecov.io/github/AllianceAuth-Apps/aa-structuretimers/graph/badge.svg?token=HAHvTzJj2X)](https://codecov.io/github/AllianceAuth-Apps/aa-structuretimers)
+[![license](https://img.shields.io/badge/license-MIT-green)](https://github.com/AllianceAuth-Apps/aa-structuretimers#MIT-1-ov-file)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![chat](https://img.shields.io/discord/790364535294132234)](https://discord.gg/zmh52wnfvM)
@@ -21,28 +21,28 @@ An app for keeping track of Eve Online structure timers with Alliance Auth and D
 - [Notification Rules](#notification-rules)
 - [Permissions](#permissions)
 - [Management commands](#management-commands)
-- [Change Log](CHANGELOG.md)
 
 ## Overview
 
 *Structure Timers II* is an enhanced version of the Alliance Auth's Structure Timers app, with many additional useful features and an improved UI. Here is a overview of it's main features in comparison to Auth's basic variant.
 
 Feature | Auth | Structure Timer II
---|--|--
+-- | -- | --
 Create and edit timers for structures | x | x
 See all pending timers at a glance and with live countdowns | x | x
 Restrict timer access to your corporation | x | x
 Restrict ability to create and delete timers to certain users | x | x
-Get automatic notifications about upcoming timers on Discord  | - | x
-Define a timer type (e.g. armor or hull)| - | x
+Get automatic notifications about upcoming timers on Discord | - | x
+Define a timer type (e.g. armor or hull) | - | x
 Restrict timer access to your alliance | - | x
 Restrict timer access to people with special clearance ("OPSEC") | - | x
-Add screenshots to timers (e.g. with the structure's fitting)| - | x
-Create timers more quickly and precisely with autocomplete for solar system and structure types| - | x
+Add screenshots to timers (e.g. with the structure's fitting) | - | x
+Create timers more quickly and precisely with autocomplete for solar system and structure types | - | x
 Find timers more quickly with filters and full text search | - | x
 Automatic cleanup of elapsed timers | - | x
 
->**Hint**<br>If you like to see all timers in a calendar view please consider checking out the amazing app [Allianceauth Opcalendar](https://gitlab.com/paulipa/allianceauth-opcalendar), which is fully integrated with **Structure Timers II**.
+>[!Hint]
+> If you like to see all timers in a calendar view please consider checking out the amazing app [Allianceauth Opcalendar](https://gitlab.com/paulipa/allianceauth-opcalendar), which is fully integrated with **Structure Timers II**.
 
 ## Screenshots
 
@@ -70,7 +70,7 @@ Please make sure you meet all preconditions before proceeding:
 
 1. Structure Timers is a plugin for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth). If you don't have Alliance Auth running already, please install it first before proceeding. (see the official [AA installation guide](https://allianceauth.readthedocs.io/en/latest/installation/auth/allianceauth/) for details)
 
-2. Structure Timers needs the app [django-eveuniverse](https://gitlab.com/ErikKalkoken/django-eveuniverse) to function. Please make sure it is installed, before continuing.
+2. Structure Timers needs the app [django-eveuniverse](https://github.com/AllianceAuth-Apps/django-eveuniverse) to function. Please make sure it is installed, before continuing.
 
 Note that Structure Timers is compatible with Alliance Auth's Structure Timer app and can be installed in parallel.
 
@@ -151,12 +151,12 @@ Note that all settings are optional and the app will use the documented default 
 
 Name | Description | Default
 -- | -- | --
-`STRUCTURETIMERS_MAX_AGE_FOR_NOTIFICATIONS`| Will not sent notifications for timers, which event time is older than the given minutes | `60`
-`STRUCTURETIMERS_NOTIFICATIONS_ENABLED`| Wether notifications for timers are scheduled at all | `True`
-`STRUCTURETIMERS_TIMERS_OBSOLETE_AFTER_DAYS`| Minimum age in days for a timer to be considered obsolete. Obsolete timers will automatically be deleted. If you want to keep all timers, set to `None` | `30`
-`STRUCTURETIMERS_DEFAULT_PAGE_LENGTH`| Default page size for timerboard. Must be an integer value from the available options in the app. | `10`
-`STRUCTURETIMERS_PAGING_ENABLED`| Wether paging is enabled on the timerboard. | `True`
-`STRUCTURETIMER_NOTIFICATION_SET_AVATAR`| Wether structures sets the name and avatar icon of a webhook. When False the webhook will use it's own values as set on the platform. | `True`
+`STRUCTURETIMERS_MAX_AGE_FOR_NOTIFICATIONS` | Will not sent notifications for timers, which event time is older than the given minutes | `60`
+`STRUCTURETIMERS_NOTIFICATIONS_ENABLED` | Wether notifications for timers are scheduled at all | `True`
+`STRUCTURETIMERS_TIMERS_OBSOLETE_AFTER_DAYS` | Minimum age in days for a timer to be considered obsolete. Obsolete timers will automatically be deleted. If you want to keep all timers, set to `None` | `30`
+`STRUCTURETIMERS_DEFAULT_PAGE_LENGTH` | Default page size for timerboard. Must be an integer value from the available options in the app. | `10`
+`STRUCTURETIMERS_PAGING_ENABLED` | Wether paging is enabled on the timerboard. | `True`
+`STRUCTURETIMER_NOTIFICATION_SET_AVATAR` | Wether structures sets the name and avatar icon of a webhook. When False the webhook will use it's own values as set on the platform. | `True`
 
 ## Notification Rules
 
