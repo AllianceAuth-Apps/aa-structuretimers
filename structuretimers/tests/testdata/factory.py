@@ -3,7 +3,6 @@ from typing import Generic, TypeVar
 from unittest.mock import Mock, patch
 
 import factory
-import factory.faker
 import factory.fuzzy
 
 from django.contrib.auth.models import User
@@ -18,6 +17,7 @@ from eveuniverse.tests.testdata.factories_2 import (
 from allianceauth.authentication.models import CharacterOwnership
 from allianceauth.eveonline.models import EveCharacter
 from allianceauth.tests.auth_utils import AuthUtils
+from allianceauth.timerboard.models import Timer as AuthTimer
 from app_utils.helpers import random_string
 from app_utils.testdata_factories import UserMainFactory
 
@@ -68,6 +68,34 @@ class UserWithManageFactory(UserMainFactory):
         "structuretimers.basic_access",
         "structuretimers.manage_timer",
     ]
+
+
+supported_structure_values = set(AuthTimer.Structure.values) - {
+    AuthTimer.Structure.OTHER
+}
+
+
+class AuthTimerFactory(
+    factory.django.DjangoModelFactory, metaclass=BaseMetaFactory[AuthTimer]
+):
+    class Meta:
+        model = AuthTimer
+
+    corp_timer = False
+    details = factory.faker.Faker("sentence")
+    eve_character = factory.LazyAttribute(lambda o: o.user.profile.main_character)
+    eve_corp = factory.LazyAttribute(
+        lambda o: o.user.profile.main_character.corporation
+    )
+    eve_time = factory.fuzzy.FuzzyDateTime(
+        now() + dt.timedelta(days=1), now() + dt.timedelta(days=7)
+    )
+    important = False
+    objective = factory.fuzzy.FuzzyChoice(AuthTimer.Objective.values)
+    structure = factory.fuzzy.FuzzyChoice(supported_structure_values)
+    system = "Amamake"
+    timer_type = factory.fuzzy.FuzzyChoice(AuthTimer.TimerType.values)
+    user = factory.SubFactory(UserMainFactory)
 
 
 class EveSolarSystemNullSecFactory(EveSolarSystemFactory):

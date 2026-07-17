@@ -1,89 +1,71 @@
-from django.core.management.base import BaseCommand
-from django.db import models
+from django.core.management.base import BaseCommand, CommandError
+from django.db.models import QuerySet
 from django.utils.timezone import now
 from eveuniverse.models import EveSolarSystem
 
+from allianceauth.timerboard.models import Timer as AuthTimer
+from app_utils.datetime import DATETIME_FORMAT
 from app_utils.django import app_labels
 
+from structuretimers.constants import EveTypeId
 from structuretimers.models import Timer
 
+_OBJECTIVE_MAP = {
+    AuthTimer.Objective.FRIENDLY: Timer.Objective.FRIENDLY,
+    AuthTimer.Objective.HOSTILE: Timer.Objective.HOSTILE,
+    AuthTimer.Objective.NEUTRAL: Timer.Objective.NEUTRAL,
+}
 
-def get_input(text):
-    """wrapped input to enable unit testing / patching"""
-    return input(text)
 
+_STRUCTURE_MAP = {
+    AuthTimer.Structure.ANSIBLEX: EveTypeId.ANSIBLEX,
+    AuthTimer.Structure.ASTRAHUS: EveTypeId.ASTRAHUS,
+    AuthTimer.Structure.ATHANOR: EveTypeId.ATHANOR,
+    AuthTimer.Structure.AZBEL: EveTypeId.AZBEL,
+    AuthTimer.Structure.FORTIZAR: EveTypeId.FORTIZAR,
+    AuthTimer.Structure.IHUB: EveTypeId.IHUB,
+    AuthTimer.Structure.KEEPSTAR: EveTypeId.KEEPSTAR,
+    AuthTimer.Structure.MERCDEN: EveTypeId.MERCENARY_DEN,
+    AuthTimer.Structure.METENOX: EveTypeId.METENOX_MOON_DRILL,
+    AuthTimer.Structure.MOONPOP: EveTypeId.ATHANOR,
+    AuthTimer.Structure.ORBITALSKYHOOK: EveTypeId.ORBITAL_SKYHOOK,
+    AuthTimer.Structure.PHAROLUX: EveTypeId.PHAROLUX,
+    AuthTimer.Structure.POCO: EveTypeId.CUSTOMS_OFFICE,
+    AuthTimer.Structure.POSL: EveTypeId.CALDARI_CONTROL_TOWER,
+    AuthTimer.Structure.POSM: EveTypeId.CALDARI_CONTROL_TOWER_MEDIUM,
+    AuthTimer.Structure.POSS: EveTypeId.CALDARI_CONTROL_TOWER_SMALL,
+    AuthTimer.Structure.RAITARU: EveTypeId.RAITARU,
+    AuthTimer.Structure.SOTIYO: EveTypeId.SOTIYO,
+    AuthTimer.Structure.TATARA: EveTypeId.TATARA,
+    AuthTimer.Structure.TENEBREX: EveTypeId.TENEBREX,
+}
 
-# objectives
-OBJECTIVE_CHOICES = [
-    (Timer.Objective.HOSTILE, "Hostile"),
-    (Timer.Objective.FRIENDLY, "Friendly"),
-    (Timer.Objective.NEUTRAL, "Neutral"),
-    (Timer.Objective.UNDEFINED, "Undefined"),
-]
-
-# structure types
-STRUCTURE_TYPE_POCO = 2233
-STRUCTURE_TYPE_I_HUB = 2233
-STRUCTURE_TYPE_TCU = 32226
-STRUCTURE_TYPE_POS_S = 20062
-STRUCTURE_TYPE_POS_M = 20061
-STRUCTURE_TYPE_POS_L = 16213
-STRUCTURE_TYPE_ASTRAHUS = 35832
-STRUCTURE_TYPE_FORTIZAR = 35833
-STRUCTURE_TYPE_KEEPSTAR = 35834
-STRUCTURE_TYPE_RAITARU = 35825
-STRUCTURE_TYPE_AZBEL = 35826
-STRUCTURE_TYPE_SOTIYO = 35827
-STRUCTURE_TYPE_ATHANOR = 35835
-STRUCTURE_TYPE_TATARA = 35836
-STRUCTURE_TYPE_PHAROLUX = 35840
-STRUCTURE_TYPE_TENEBREX = 37534
-STRUCTURE_TYPE_ANSIBLEX = 35841
-STRUCTURE_TYPE_STATION = 1529
-
-STRUCTURE_CHOICES = [
-    (STRUCTURE_TYPE_POCO, "POCO"),
-    (STRUCTURE_TYPE_I_HUB, "I-HUB"),
-    (STRUCTURE_TYPE_TCU, "TCU"),
-    (STRUCTURE_TYPE_POS_S, "POS[S]"),
-    (STRUCTURE_TYPE_POS_M, "POS[M]"),
-    (STRUCTURE_TYPE_POS_L, "POS[L]"),
-    (STRUCTURE_TYPE_ASTRAHUS, "Astrahus"),
-    (STRUCTURE_TYPE_FORTIZAR, "Fortizar"),
-    (STRUCTURE_TYPE_KEEPSTAR, "Keepstar"),
-    (STRUCTURE_TYPE_RAITARU, "Raitaru"),
-    (STRUCTURE_TYPE_AZBEL, "Azbel"),
-    (STRUCTURE_TYPE_SOTIYO, "Sotiyo"),
-    (STRUCTURE_TYPE_ATHANOR, "Athanor"),
-    (STRUCTURE_TYPE_TATARA, "Tatara"),
-    (STRUCTURE_TYPE_PHAROLUX, "Pharolux Cyno Beacon"),
-    (STRUCTURE_TYPE_TENEBREX, "Tenebrex Cyno Jammer"),
-    (STRUCTURE_TYPE_ANSIBLEX, "Ansiblex Jump Gate"),
-    (STRUCTURE_TYPE_ATHANOR, "Moon Mining Cycle"),
-]
+_TIMER_TYPE_MAP = {
+    AuthTimer.TimerType.ANCHORING: Timer.Type.ANCHORING,
+    AuthTimer.TimerType.ARMOR: Timer.Type.ARMOR,
+    AuthTimer.TimerType.FINAL: Timer.Type.FINAL,
+    AuthTimer.TimerType.HULL: Timer.Type.HULL,
+    AuthTimer.TimerType.THEFT: Timer.Type.THEFT,
+    AuthTimer.TimerType.UNANCHORING: Timer.Type.UNANCHORING,
+    AuthTimer.TimerType.UNSPECIFIED: Timer.Type.NONE,
+}
 
 
 class Command(BaseCommand):
-    help = (
-        "Removes all app-related data from the database. "
-        "Run this command before zero migrations, "
-        "which would otherwise fail due to FK constraints."
-    )
+    help = "Migrate pending timers from Alliance Auth's Structure Timers app."
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "-t",
-            "--test",
+            "--dry-run",
             action="store_true",
-            help="Perform's a test run. Does not actually migrate, but will show potential issues.",
+            help="Perform's a dry run. Does not actually migrate, but will show potential issues.",
         )
 
     def _migrate_timers(
-        self, auth_timers_qs: models.QuerySet, is_test: bool = False
+        self, auth_timers_qs: QuerySet[AuthTimer], is_dry_run: bool
     ) -> None:
-        objective_map = {x[1]: x[0] for x in OBJECTIVE_CHOICES}
-        structure_map = {x[1]: x[0] for x in STRUCTURE_CHOICES}
         migrated_count = 0
+        issues_count = 0
         skipped_count = 0
         for auth_timer in auth_timers_qs:
             try:
@@ -91,118 +73,112 @@ class Command(BaseCommand):
             except EveSolarSystem.DoesNotExist:
                 self.stdout.write(
                     self.style.WARNING(
-                        f"Can not migrate timer '{auth_timer}', "
-                        f"due to invalid solar system: {auth_timer.system}"
+                        f"Can't migrate timer with unrecognized solar system: {_auth_timer_str(auth_timer)}"
                     )
                 )
-                skipped_count += 1
+                issues_count += 1
                 continue
 
-            if auth_timer.structure in structure_map:
-                structure_type_id = structure_map[auth_timer.structure]
-            else:
+            if auth_timer.structure not in _STRUCTURE_MAP:
                 self.stdout.write(
                     self.style.WARNING(
-                        f"Can not migrate timer '{auth_timer}', "
-                        f"due to invalid structure type: {auth_timer.structure}"
+                        f"Can't migrate timer with unrecognized structure: {_auth_timer_str(auth_timer)}"
                     )
                 )
-                skipped_count += 1
+                issues_count += 1
                 continue
 
-            if auth_timer.objective in objective_map:
-                objective = objective_map[auth_timer.objective]
-            else:
+            structure_type_id = _STRUCTURE_MAP[auth_timer.structure]
+
+            if auth_timer.objective not in _OBJECTIVE_MAP:
+                self.stdout.write(
+                    self.style.NOTICE(
+                        f"Unrecognized objective for timer: {_auth_timer_str(auth_timer)}"
+                    )
+                )
                 objective = Timer.Objective.UNDEFINED
+            else:
+                objective = _OBJECTIVE_MAP[auth_timer.objective]
+
+            if auth_timer.timer_type not in _TIMER_TYPE_MAP:
+                self.stdout.write(
+                    self.style.NOTICE(
+                        f"Unrecognized type for timer: {_auth_timer_str(auth_timer)}"
+                    )
+                )
+                timer_type = Timer.Type.NONE
+            else:
+                timer_type = _TIMER_TYPE_MAP[auth_timer.timer_type]
+
+            if (
+                auth_timer.structure == AuthTimer.Structure.MOONPOP
+                and auth_timer.timer_type == AuthTimer.TimerType.UNSPECIFIED
+            ):
+                timer_type = Timer.Type.MOONMINING
 
             if auth_timer.corp_timer:
                 visibility = Timer.Visibility.CORPORATION
             else:
                 visibility = Timer.Visibility.UNRESTRICTED
 
-            details_lower = auth_timer.details.lower()
-            if "Moon Mining Cycle" in auth_timer.structure:
-                timer_type = Timer.Type.MOONMINING
-            elif "armor" in details_lower:
-                timer_type = Timer.Type.ARMOR
-            elif "hull" in details_lower:
-                timer_type = Timer.Type.HULL
-            elif "final" in details_lower:
-                timer_type = Timer.Type.FINAL
-            elif "unanchor" in details_lower:
-                timer_type = Timer.Type.UNANCHORING
-            elif "anchor" in details_lower:
-                timer_type = Timer.Type.ANCHORING
-            else:
-                timer_type = Timer.Type.NONE
+            try:
+                Timer.objects.get(
+                    date=auth_timer.eve_time,
+                    eve_solar_system=eve_solar_system,
+                    structure_type_id=structure_type_id,
+                    timer_type=timer_type,
+                )
 
-            if not is_test:
-                try:
-                    Timer.objects.get(
-                        eve_solar_system=eve_solar_system,
-                        structure_type_id=structure_type_id,
-                        date=auth_timer.eve_time,
-                        details_notes=auth_timer.details,
-                    )
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"Skipping timer '{auth_timer}', since it already exists"
-                        )
-                    )
-                    skipped_count += 1
-
-                except Timer.DoesNotExist:
+            except Timer.DoesNotExist:
+                if not is_dry_run:
                     Timer.objects.create(
-                        eve_solar_system=eve_solar_system,
-                        structure_type_id=structure_type_id,
                         date=auth_timer.eve_time,
-                        user=auth_timer.user,
-                        location_details=auth_timer.planet_moon,
-                        timer_type=timer_type,
                         details_notes=auth_timer.details,
-                        objective=objective,
-                        is_important=auth_timer.important,
-                        visibility=visibility,
+                        eve_alliance=auth_timer.eve_corp.alliance,
                         eve_character=auth_timer.eve_character,
                         eve_corporation=auth_timer.eve_corp,
-                        eve_alliance=auth_timer.eve_corp.alliance,
+                        eve_solar_system=eve_solar_system,
+                        is_important=auth_timer.important,
+                        location_details=auth_timer.planet_moon,
+                        objective=objective,
+                        structure_type_id=structure_type_id,
+                        timer_type=timer_type,
+                        user=auth_timer.user,
+                        visibility=visibility,
                     )
-                    migrated_count += 1
+                migrated_count += 1
 
+            else:
+                self.stdout.write(
+                    self.style.NOTICE(
+                        f"Skipping already existing timer: {_auth_timer_str(auth_timer)}"
+                    )
+                )
+                skipped_count += 1
+
+        total = migrated_count + issues_count + skipped_count
         self.stdout.write(
-            f"Results: Migrated: {migrated_count} - Skipped: {skipped_count} "
-            f"- Total: {auth_timers_qs.count()}"
+            f"Results: Migrated: {migrated_count} - Issues: {issues_count} "
+            f"- Total: {total}"
         )
 
     def handle(self, *args, **options):
         if "timerboard" not in app_labels():
-            self.stdout.write(
-                self.style.WARNING(
-                    "The timerboard app from Auth is not installed. Aborted."
-                )
-            )
-        else:
-            from allianceauth.timerboard.models import Timer as AuthTimer
+            raise CommandError("The Alliance Auth timerboard app is not installed.")
 
-            auth_timers_qs = AuthTimer.objects.filter(eve_time__gt=now())
-            self.stdout.write(
-                f"This command will migrate {auth_timers_qs.count()} "
-                "pending timers from the "
-                "Auth's timerboard app to this app. "
-            )
-            self.stdout.write(
-                "Note that timers that have been migrated previously "
-                "will not be migrated again "
-                "unless the migrated timers have been changed significantly."
-            )
-            is_test = options["test"]
-            if is_test:
-                self.stdout.write("Test run - will not migrate")
+        auth_timers_qs = AuthTimer.objects.filter(eve_time__gt=now())
+        is_dry_run = options["dry_run"]
+        count = auth_timers_qs.count()
+        topic = "dry run" if is_dry_run else "migration"
+        self.stdout.write(f"Started {topic} for {count} timers")
+        self._migrate_timers(auth_timers_qs, is_dry_run=is_dry_run)
+        self.stdout.write(self.style.SUCCESS(f"{topic.capitalize()} completed!"))
 
-            user_input = get_input("Are you sure you want to proceed? (y/N)?")
-            if user_input.lower() == "y":
-                self.stdout.write("Starting migrating timers. Please stand by.")
-                self._migrate_timers(auth_timers_qs, is_test=is_test)
-                self.stdout.write(self.style.SUCCESS("Migration complete!"))
-            else:
-                self.stdout.write(self.style.WARNING("Aborted."))
+
+def _auth_timer_str(timer: AuthTimer) -> str:
+    eve_time = timer.eve_time.strftime(DATETIME_FORMAT)
+    timer_type = AuthTimer.TimerType(timer.timer_type).label
+    location = timer.system
+    if timer.planet_moon:
+        location += f" - {timer.planet_moon}"
+    return f"{timer_type} in {location} @ {eve_time}"
