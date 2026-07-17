@@ -225,4 +225,4 @@ Codename | Description
 The following management commands are available:
 
 - **structuretimers_load_eve**: Preload all eve objects required for this app to function
-- **structuretimers_migrate_timers**: Migrate pending timers from Auth's Structure Timers apps
+- **structuretimers_migrate_timers**: Migrate pending timers from Alliance Auth's Structure Timers app
