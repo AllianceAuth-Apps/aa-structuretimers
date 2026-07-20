@@ -41,9 +41,9 @@ from structuretimers.app_settings import (
     STRUCTURETIMERS_DEFAULT_PAGE_LENGTH,
     STRUCTURETIMERS_PAGING_ENABLED,
 )
-from structuretimers.constants import EveCategoryId, EveGroupId, EveTypeId
 from structuretimers.forms import TimerForm
 from structuretimers.models import DistancesFromStaging, StagingSystem, Timer
+from structuretimers.selectors import supported_eve_types
 
 logger = get_extension_logger(__name__)
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
@@ -473,36 +473,13 @@ class Select2SolarSystemsView(JSONResponseMixin, ListView):
 class Select2StructureTypesView(JSONResponseMixin, ListView):
     """Dynamically generated list of types for select2 widget."""
 
-    model = EveType
-
     def get_queryset(self):
-        qs = super().get_queryset()
         term = self.request.GET.get("term")
         if not term:
-            return qs.none()
-        qs = (
-            qs.filter(
-                eve_group__eve_category_id=EveCategoryId.STRUCTURE, published=True
-            )
-            | qs.filter(
-                eve_group_id__in=[
-                    EveGroupId.CONTROL_TOWER,
-                    EveGroupId.MOBILE_DEPOT,
-                    EveGroupId.MERCENARY_DEN,
-                ],
-                published=True,
-            )
-            | qs.filter(eve_group_id__in=[EveGroupId.PIRATE_FORWARD_OPERATING_BASE])
-            | qs.filter(
-                id__in=[
-                    EveTypeId.CUSTOMS_OFFICE,
-                    EveTypeId.ORBITAL_SKYHOOK,
-                    EveTypeId.IHUB,
-                    EveTypeId.TCU,
-                ]
-            )
-        )
-        return qs.distinct().filter(name__icontains=term)
+            return EveType.objects.none()
+
+        qs = supported_eve_types()
+        return qs.filter(name__icontains=term)
 
     def get_context_data(self, **kwargs):
         if self.object_list:
