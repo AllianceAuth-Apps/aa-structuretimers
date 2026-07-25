@@ -15,6 +15,7 @@ An app for keeping track of Eve Online structure timers with Alliance Auth and D
 ## Contents
 
 - [Overview](#overview)
+- [Features](#features)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
 - [Settings](#settings)
@@ -24,25 +25,25 @@ An app for keeping track of Eve Online structure timers with Alliance Auth and D
 
 ## Overview
 
-*Structure Timers II* is an enhanced version of the Alliance Auth's Structure Timers app, with many additional useful features and an improved UI. Here is a overview of it's main features in comparison to Auth's basic variant.
+**Structure Timers II** is an enhanced version of the Alliance Auth's Structure Timers app. It offers many additional and useful features and an improved UI. It also provide integrations with several other community apps, e.g. aa-structures.
 
-Feature | Auth | Structure Timer II
--- | -- | --
-Create and edit timers for structures | x | x
-See all pending timers at a glance and with live countdowns | x | x
-Restrict timer access to your corporation | x | x
-Restrict ability to create and delete timers to certain users | x | x
-Get automatic notifications about upcoming timers on Discord | - | x
-Define a timer type (e.g. armor or hull) | - | x
-Restrict timer access to your alliance | - | x
-Restrict timer access to people with special clearance ("OPSEC") | - | x
-Add screenshots to timers (e.g. with the structure's fitting) | - | x
-Create timers more quickly and precisely with autocomplete for solar system and structure types | - | x
-Find timers more quickly with filters and full text search | - | x
-Automatic cleanup of elapsed timers | - | x
+## Features
 
->[!Hint]
-> If you like to see all timers in a calendar view please consider checking out the amazing app [Allianceauth Opcalendar](https://gitlab.com/paulipa/allianceauth-opcalendar), which is fully integrated with **Structure Timers II**.
+Here is a overview of **Structure Timers II**'s main features.
+
+- Create and edit timers for structure and moon mining events
+- Add notes and screenshots to timers (e.g. with the structure's fitting)
+- Get automatic notifications about upcoming timers on Discord
+- Restrict timer access to your corporation, alliance or users with special clearance ("OPSEC")
+- Find timers quickly with filters and full text search
+- Automatic cleanup of elapsed timers
+- Integrated with several other community apps
+
+**Structure Timers II** is integrated with the following community apps:
+
+- [aa-structures](https://github.com/AllianceAuth-Apps/aa-structures): Automatically adds new timers from structure and moon mining notifications
+- [allianceauth-opcalendar](https://gitlab.com/paulipa/allianceauth-opcalendar): Shows timers in a calender view and with other events
+- [allianceauth-restapi](https://gitlab.com/munsking/allianceauth-restapi): Adds a REST API for fetching and adding timers
 
 ## Screenshots
 
@@ -133,7 +134,8 @@ If you have already been using the classic app from Auth, you can migrate your e
 python manage.py structuretimers_migrate_timers
 ```
 
-Note: We suggest migration timers before setting up notification rules to avoid potential notification spam for migrated timers.
+> [!NOTE]
+> We suggest migration timers before setting up notification rules to avoid potential notification spam for migrated timers.
 
 ### Step 7 - Setup notification rules
 
@@ -147,7 +149,8 @@ Another important step is to setup permissions, to ensure the right people have 
 
 Here is a list of available settings for this app. They can be configured by adding them to your Auth settings file (`local.py`).
 
-Note that all settings are optional and the app will use the documented default settings if they are not used.
+> [!TIP]
+> All settings are optional and the app will use the documented default settings if they are not used.
 
 Name | Description | Default
 -- | -- | --
@@ -160,9 +163,10 @@ Name | Description | Default
 
 ## Notification Rules
 
-In *Structure Timers II* you can receive automatic notifications on Discord for timers by setting up notification rules. Notification rules allow you to define in detail what event and which kind of timers should trigger notifications.
+In **Structure Timers II** you can receive automatic notifications on Discord for timers by setting up notification rules. Notification rules allow you to define in detail what event and which kind of timers should trigger notifications.
 
-Note that in general all rules are independent from each other and all enabled rules will be executed for every timer one by one.
+> [!NOTE]
+> In general all rules are independent from each other and all enabled rules will be executed for every timer one by one.
 
 ### Example setup
 
